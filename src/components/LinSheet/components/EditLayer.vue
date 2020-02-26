@@ -35,34 +35,32 @@ export default {
     // ClipboardEvent.clipboardData: https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent/clipboardData
     // 常见 MIME 类型列表: https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
     handleCellPaste (e) {
-      console.log(e)
+      console.log('event:', e)
+      // 是否为IE浏览器
+      const isIE = IEVersion() > -1
+      // 现代浏览器 e.clipboardData
       // IE浏览器 window.clipboardData
-      const clipboard = e.clipboardData || window.clipboardData
+      const clipboard = isIE ? window.clipboardData : e.clipboardData
       let clipboardData = void 0
-      try {
-        clipboardData = clipboard.getData('text/html')
-      } catch (e) {
-        console.error(e)
+      console.log('clipboard:', clipboard)
+      console.log('clipboard.types:', clipboard.types)
+      console.log('clipboard.items:', clipboard.items)
+      for (const item of clipboard.items) {
+        console.log(item)
       }
-      if (clipboardData) {
-        // 暂不开发 解析HTML 转换为Vue能处理的数据
-        console.log(clipboardData)
-        this.sheetData = clipboardData
+      if (isIE) {
+        // IE浏览器只能用 Text 参数
+        clipboardData = clipboard.getData('Text')
       } else {
-        try {
-          // 判断是否为IE浏览器，IE浏览器只能用 Text 参数
-          clipboardData = IEVersion() > -1 ? clipboard.getData('Text') : clipboard.getData('text/plain')
-        } catch (e) {
-          console.error(e)
-        }
-        if (clipboardData) {
-          // 解析文字 转换为Vue能处理的数据
-          console.log('clipboardData:', clipboardData)
-          this.sheetData += this.parsePasteText(clipboardData)
-        } else {
-          // 判断是否为图片
-        }
+        // 判断类型
+        // 目前已知文件，text/html，text/plain
+        // HTML
+        clipboardData = clipboard.getData('text/html')
+        // 文字
+        clipboardData = clipboard.getData('text/plain')
       }
+      console.log('clipboardData:', clipboardData)
+      this.sheetData += this.parsePasteText(clipboardData)
     },
     // 输入
     handleCellInput (e) {

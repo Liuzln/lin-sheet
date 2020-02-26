@@ -2,66 +2,89 @@
   <canvas
     ref="sheetCanvas"
     class="sheet-canvas"
-    :width="innerWidth"
-    :height="innerHeight"
+    :width="canvasWidth"
+    :height="canvasHeight"
     @click="handleClickSheet"
+    :style="`width: ${canvasWidth / ratio}px; height: ${canvasHeight / ratio}px`"
   />
 </template>
 
 <script>
-import debounce from 'lodash.debounce'
+
 import { drawVerticalLine, drawHorizontalLine, drawRect, drawText } from '@/utils/canvas'
-import { getInnerWidth, getInnerHeight } from '@/utils/util'
 import { colunmsName } from '@/utils/const'
 
 export default {
   name: 'editLayer',
+  props: {
+    width: {
+      type: Number,
+      required: true
+    },
+    height: {
+      type: Number,
+      required: true
+    },
+    // 行
+    rows: {
+      type: Array,
+      required: true
+    },
+    rowStartY: {
+      type: Number,
+      default: 24.5
+    },
+    // 列
+    columns: {
+      type: Array,
+      required: true
+    },
+    // 列的开始位置
+    columnsStartX: {
+      type: Number,
+      default: 45.5
+    },
+    // 列的高度
+    columnHeight: {
+      type: Number,
+      default: 24
+    }
+  },
   data () {
     return {
-      innerWidth: getInnerWidth(),
-      innerHeight: getInnerHeight(),
-      option: {
-        // colunm
-        offsetLeft: 45.5,
-        // Row
-        offsetTop: 24.5,
-        columnHeight: 24
-      },
       sheetCanvasContext: '',
-      generateRowNumber: 100,
-      generateColumnNumber: 100,
-      rows: [],
-      columns: []
+      canvasWidth: '',
+      canvasHeight: '',
+      ratio: ''
     }
   },
   mounted () {
-    this.init()
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
-    window.addEventListener('resize', debounce(() => {
-      const imageData = this.sheetCanvasContext.getImageData(0, 0, this.innerWidth, this.innerHeight)
-      this.innerWidth = getInnerWidth()
-      this.innerHeight = getInnerHeight()
-      this.sheetCanvasContext.putImageData(imageData, 0, 0)
-    }, 20))
-    this.$nextTick(() => {
-      this.drawColumn()
-      this.drawRow()
-    })
+    this.drawSheet()
   },
   methods: {
-    init () {
-      for (let i = 0, len = this.generateRowNumber; i < len; i++) {
-        this.rows.push({
-          id: i,
-          height: 25
+    // 计算比例
+    computeRatio () {
+      const devicePixelRatio = window.devicePixelRatio || 1
+      const backingStoreRatio = this.sheetCanvasContext.webkitBackingStorePixelRatio ||
+                        this.sheetCanvasContext.mozBackingStorePixelRatio ||
+                        this.sheetCanvasContext.msBackingStorePixelRatio ||
+                        this.sheetCanvasContext.oBackingStorePixelRatio ||
+                        this.sheetCanvasContext.backingStorePixelRatio || 1
+      return devicePixelRatio / backingStoreRatio
+    },
+    // 绘制表格
+    drawSheet () {
+      this.ratio = this.computeRatio() // 计算比例
+      this.canvasWidth = this.width * this.ratio
+      this.canvasHeight = this.height * this.ratio
+      this.$nextTick(() => {
+        this.sheetCanvasContext.scale(this.ratio, this.ratio)
+        this.$nextTick(() => {
+          this.drawColumn()
+          this.drawRow()
         })
-      }
-      for (let i = 0, len = this.generateColumnNumber; i < len; i++) {
-        this.columns.push({
-          id: i,
-          width: 90
-        })
-      }
+      })
     },
     // TODO: 根据坐标改变光标
     // TODO: 根据点击位置选择单元格、列、行
@@ -74,20 +97,20 @@ export default {
     },
     drawColumn () {
       const ctx = this.sheetCanvasContext
-      let lineStartX = this.option.offsetLeft
+      let lineStartX = this.columnsStartX
       drawRect({
         ctx: ctx,
         startX: 0,
         startY: 0,
         width: lineStartX,
-        height: this.option.columnHeight,
+        height: this.columnHeight,
         color: 'RGB(242, 244, 247)'
       })
       drawVerticalLine({
         ctx: ctx,
         startX: lineStartX,
         startY: 0,
-        length: this.option.columnHeight,
+        length: this.columnHeight,
         color: this.getLinearGradient()
       })
       for (let i = 0, len = this.columns.length; i < len; i++) {
@@ -97,14 +120,14 @@ export default {
           startX: lineStartX,
           startY: 0,
           width: column.width,
-          height: this.option.columnHeight,
+          height: this.columnHeight,
           color: 'RGB(242, 244, 247)'
         })
         drawVerticalLine({
           ctx: ctx,
           startX: lineStartX,
           startY: 0,
-          length: 100000000,
+          length: 100000,
           color: 'RGB(215, 218, 222)'
         })
 
@@ -114,7 +137,7 @@ export default {
         } else {
           let temp = i - 26
           let count = 0
-          console.log('temp:', temp)
+          // console.log('temp:', temp)
           while (temp >= 26) {
             temp -= 26
             count++
@@ -136,20 +159,20 @@ export default {
     },
     drawRow () {
       const ctx = this.sheetCanvasContext
-      let startY = this.option.offsetTop
+      let startY = this.rowStartY
       for (let i = 0, len = this.rows.length; i < len; i++) {
         const row = this.rows[i]
         drawRect({
           ctx: ctx,
           startX: 0,
           startY: startY,
-          width: this.option.offsetLeft,
+          width: this.columnsStartX,
           height: row.height,
           color: 'RGB(242, 244, 247)'
         })
         drawVerticalLine({
           ctx: ctx,
-          startX: this.option.offsetLeft,
+          startX: this.columnsStartX,
           startY: startY,
           length: row.height,
           color: 'RGB(215, 218, 222)'
@@ -158,7 +181,7 @@ export default {
           ctx: ctx,
           startX: 0,
           startY: startY,
-          length: 100000000,
+          length: 100000,
           color: 'RGB(215, 218, 222)'
         })
         drawText({

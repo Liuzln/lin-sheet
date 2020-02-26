@@ -1,24 +1,16 @@
 <template>
   <div id="app">
-    <!-- 单元格绘制 -->
-    <sheet-layer
-      @s-click="handleClickSheet"
-    />
-    <!-- 选择框层 -->
-    <!-- 修改层 -->
-    <edit-layer />
+    <lin-sheet />
   </div>
 </template>
 
 <script>
-import SheetLayer from './components/SheetLayer.vue'
-import EditLayer from './components/EditLayer.vue'
+import LinSheet from './components/LinSheet'
 
 export default {
   name: 'app',
   components: {
-    SheetLayer,
-    EditLayer
+    LinSheet
   },
   data () {
     return {
