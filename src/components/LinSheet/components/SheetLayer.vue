@@ -78,13 +78,13 @@ export default {
       this.ratio = this.computeRatio() // 计算比例
       this.canvasWidth = this.width * this.ratio
       this.canvasHeight = this.height * this.ratio
-      this.$nextTick(() => {
+      setTimeout(() => {
         this.sheetCanvasContext.scale(this.ratio, this.ratio)
-        this.$nextTick(() => {
+        setTimeout(() => {
           this.drawColumn()
           this.drawRow()
-        })
-      })
+        }, 0)
+      }, 0)
     },
     // TODO: 根据坐标改变光标
     // TODO: 根据点击位置选择单元格、列、行

@@ -59,9 +59,9 @@ export default {
       console.log('handleWindowResizeChange')
       this.sheetWidth = getInnerWidth() // 获取当前窗口宽度
       this.sheetHeight = getInnerHeight() // 获取当前窗口高度
-      this.$nextTick(() => {
+      setTimeout(() => {
         this.$refs.sheetLayer.drawSheet()
-      })
+      }, 0)
     },
     handleClickSheet ({ x, y }) {
       console.log(x)
