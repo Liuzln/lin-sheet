@@ -5,14 +5,15 @@
     :width="canvasWidth"
     :height="canvasHeight"
     @click="handleClickSheet"
-    :style="`width: ${canvasWidth / ratio}px; height: ${canvasHeight / ratio}px`"
+    :style="`width: ${ styleWidth }px; height: ${ styleHeight }px`"
   />
 </template>
 
 <script>
-
-import { drawVerticalLine, drawHorizontalLine, drawRect, drawText } from '@/utils/canvas'
-import { colunmsName } from '@/utils/const'
+import { evaluate } from '@/utils/math'
+import { drawVerticalLine, drawHorizontalLine, drawFillRect, drawText } from '@/utils/canvas'
+import { getColunmsName } from '@/utils/sheet'
+import { addEventListener } from '@/utils/event'
 
 export default {
   name: 'editLayer',
@@ -25,6 +26,11 @@ export default {
       type: Number,
       required: true
     },
+    // 浏览器缩放比例
+    browserRatio: {
+      type: Number,
+      required: true
+    },
     // 行
     rows: {
       type: Array,
@@ -32,7 +38,7 @@ export default {
     },
     rowStartY: {
       type: Number,
-      default: 24.5
+      default: 24.25
     },
     // 列
     columns: {
@@ -42,7 +48,7 @@ export default {
     // 列的开始位置
     columnsStartX: {
       type: Number,
-      default: 45.5
+      default: 45.25
     },
     // 列的高度
     columnHeight: {
@@ -53,41 +59,100 @@ export default {
   data () {
     return {
       sheetCanvasContext: '',
-      canvasWidth: '',
-      canvasHeight: '',
-      ratio: ''
+      canvasWidth: '', // canvas 宽度
+      canvasHeight: '', // canvas 高度
+      canvasRatio: this.browserRatio // canvas 缩放比例
+    }
+  },
+  computed: {
+    styleHeight: function () {
+      let height = this.height
+      if (this.canvasHeight && this.browserRatio) {
+        height = evaluate(`${this.canvasHeight} / ${this.browserRatio}`)
+      }
+      return height
+    },
+    styleWidth: function () {
+      let width = this.width
+      if (this.canvasWidth && this.browserRatio) {
+        width = evaluate(`${this.canvasWidth} / ${this.browserRatio}`)
+      }
+      return width
+    },
+    ration: function () {
+      return evaluate(`${this.canvasRatio} / ${this.browserRatio}`)
     }
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
     this.drawSheet()
+
+    // Ctrl+鼠标滚轮缩放
+    addEventListener(window, 'mousewheel', (e) => {
+      // 监测滚轮事件中是否按下了Ctrl键
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        // 滚轮下滚
+        if (e.delta === -2) {
+          if (this.ration > 0.5) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+            this.drawSheet()
+          }
+        }
+        // 滚轮上滚
+        if (e.delta === 2) {
+          if (this.ration < 3) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+            this.drawSheet()
+          }
+        }
+      }
+    }, { passive: false })
+
+    // 键盘快捷键缩放
+    addEventListener(window, 'keydown', (e) => {
+      // 按下Ctrl 以及以下任意一键：+ - 或 0
+      if (e.ctrlKey) {
+        // Ctrl +
+        if (e.code === 'Equal') {
+          e.preventDefault()
+          if (this.ration < 3) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+            this.drawSheet()
+          }
+        }
+        // Ctrl -
+        if (e.code === 'Minus') {
+          e.preventDefault()
+          if (this.ration > 0.5) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+            this.drawSheet()
+          }
+        }
+        // Ctrl 0
+        if (e.code === 'Digit0') {
+          e.preventDefault()
+          this.canvasRatio = this.browserRatio
+          this.drawSheet()
+        }
+      }
+    }, { passive: false })
   },
   methods: {
-    // 计算比例
-    computeRatio () {
-      const devicePixelRatio = window.devicePixelRatio || 1
-      const backingStoreRatio = this.sheetCanvasContext.webkitBackingStorePixelRatio ||
-                        this.sheetCanvasContext.mozBackingStorePixelRatio ||
-                        this.sheetCanvasContext.msBackingStorePixelRatio ||
-                        this.sheetCanvasContext.oBackingStorePixelRatio ||
-                        this.sheetCanvasContext.backingStorePixelRatio || 1
-      return devicePixelRatio / backingStoreRatio
-    },
     // 绘制表格
     drawSheet () {
-      this.ratio = this.computeRatio() // 计算比例
-      this.canvasWidth = this.width * this.ratio
-      this.canvasHeight = this.height * this.ratio
+      this.canvasWidth = 0
+      this.canvasHeight = 0
       setTimeout(() => {
-        this.sheetCanvasContext.scale(this.ratio, this.ratio)
+        this.canvasWidth = evaluate(`${this.width} * ${this.browserRatio}`)
+        this.canvasHeight = evaluate(`${this.height} * ${this.browserRatio}`)
         setTimeout(() => {
-          this.drawColumn()
-          this.drawRow()
+          this.drawColumnHeader()
+          this.drawRowHeader()
         }, 0)
       }, 0)
     },
-    // TODO: 根据坐标改变光标
-    // TODO: 根据点击位置选择单元格、列、行
+    // 渐变色
     getLinearGradient () {
       const ctx = this.sheetCanvasContext
       const linearGradient = ctx.createLinearGradient(45, 0, 45, 24)
@@ -95,105 +160,97 @@ export default {
       linearGradient.addColorStop(1, 'RGB(215, 218, 222)')
       return linearGradient
     },
-    drawColumn () {
+    // 绘制列头部
+    drawColumnHeader () {
       const ctx = this.sheetCanvasContext
       let lineStartX = this.columnsStartX
-      drawRect({
+      // 绘制列头左上角
+      drawFillRect({
         ctx: ctx,
         startX: 0,
         startY: 0,
-        width: lineStartX,
-        height: this.columnHeight,
+        width: evaluate(`${lineStartX} * ${this.canvasRatio}`),
+        height: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
         color: 'RGB(242, 244, 247)'
       })
       drawVerticalLine({
         ctx: ctx,
-        startX: lineStartX,
+        startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
         startY: 0,
-        length: this.columnHeight,
+        length: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
         color: this.getLinearGradient()
       })
+      // 绘制列标题
       for (let i = 0, len = this.columns.length; i < len; i++) {
         const column = this.columns[i]
-        drawRect({
+        // 绘制背景色块
+        drawFillRect({
           ctx: ctx,
-          startX: lineStartX,
+          startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
           startY: 0,
-          width: column.width,
-          height: this.columnHeight,
+          width: evaluate(`${column.width} * ${this.canvasRatio}`),
+          height: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
           color: 'RGB(242, 244, 247)'
         })
+        // 绘制分割线段
         drawVerticalLine({
           ctx: ctx,
-          startX: lineStartX,
+          startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
           startY: 0,
-          length: 100000,
+          length: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
           color: 'RGB(215, 218, 222)'
         })
-
-        let content = ''
-        if (i < 26) {
-          content = colunmsName[i]
-        } else {
-          let temp = i - 26
-          let count = 0
-          // console.log('temp:', temp)
-          while (temp >= 26) {
-            temp -= 26
-            count++
-          }
-          content = colunmsName[count]
-          content += colunmsName[i % 26]
-        }
+        // 绘制列标题
         drawText({
           ctx: ctx,
-          x: lineStartX + (column.width * 0.5),
-          y: 13,
-          content: content,
-          fontSize: '12px',
+          x: evaluate(`(${lineStartX} + (${column.width} * 0.5)) * ${this.canvasRatio}`),
+          y: evaluate(`13 * ${this.canvasRatio}`),
+          content: getColunmsName(i),
+          fontSize: `${evaluate(`12 * ${this.canvasRatio}`)}px`,
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)'
         })
-        lineStartX = lineStartX + column.width
+        lineStartX = evaluate(`${lineStartX} + ${column.width}`)
       }
     },
-    drawRow () {
+    // 绘制行头部
+    drawRowHeader () {
       const ctx = this.sheetCanvasContext
       let startY = this.rowStartY
       for (let i = 0, len = this.rows.length; i < len; i++) {
         const row = this.rows[i]
-        drawRect({
+        drawFillRect({
           ctx: ctx,
           startX: 0,
-          startY: startY,
-          width: this.columnsStartX,
-          height: row.height,
+          startY: evaluate(`${startY} * ${this.canvasRatio}`),
+          width: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
+          height: evaluate(`${row.height} * ${this.canvasRatio}`),
           color: 'RGB(242, 244, 247)'
         })
         drawVerticalLine({
           ctx: ctx,
-          startX: this.columnsStartX,
-          startY: startY,
-          length: row.height,
+          startX: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
+          startY: evaluate(`${startY} * ${this.canvasRatio}`),
+          length: evaluate(`${row.height} * ${this.canvasRatio}`),
           color: 'RGB(215, 218, 222)'
         })
         drawHorizontalLine({
           ctx: ctx,
           startX: 0,
-          startY: startY,
-          length: 100000,
+          startY: evaluate(`${startY} * ${this.canvasRatio}`),
+          length: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
           color: 'RGB(215, 218, 222)'
         })
         drawText({
           ctx: ctx,
-          x: 24,
-          y: startY + (row.height * 0.5),
-          content: i + 1,
-          fontSize: '12px',
+          x: evaluate(`${24} * ${this.canvasRatio}`),
+          y: evaluate(`(${startY} + (${row.height} * ${0.5})) * ${this.canvasRatio}`),
+          content: evaluate(`${i} + 1`),
+          fontSize: `${evaluate(`12 * ${this.canvasRatio}`)}px`,
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)'
         })
-        startY = startY + row.height
+        startY = evaluate(`${startY} + ${row.height}`)
       }
     },
     handleClickSheet (e) {

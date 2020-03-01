@@ -5,6 +5,7 @@
       ref="sheetLayer"
       :width="sheetWidth"
       :height="sheetHeight"
+      :browserRatio="browserRatio"
       :rows="rows"
       :columns="columns"
       @s-click="handleClickSheet"
@@ -16,6 +17,8 @@
 </template>
 
 <script>
+// TODO: 根据坐标改变光标
+// TODO: 根据点击位置选择单元格、列、行
 // import debounce from 'lodash.debounce'
 import { getInnerWidth, getInnerHeight } from '@/utils/util'
 
@@ -36,6 +39,11 @@ export default {
       sheetHeight: getInnerHeight(),
       rows: [],
       columns: []
+    }
+  },
+  computed: {
+    browserRatio: () => {
+      return window.devicePixelRatio || 1
     }
   },
   mounted () {
@@ -59,9 +67,7 @@ export default {
       console.log('handleWindowResizeChange')
       this.sheetWidth = getInnerWidth() // 获取当前窗口宽度
       this.sheetHeight = getInnerHeight() // 获取当前窗口高度
-      setTimeout(() => {
-        this.$refs.sheetLayer.drawSheet()
-      }, 0)
+      this.$refs.sheetLayer.drawSheet()
     },
     handleClickSheet ({ x, y }) {
       console.log(x)

@@ -14,7 +14,7 @@ export function drawHorizontalLine ({ ctx, startX = 0, startY = 0, length, color
   ctx.stroke()
 }
 
-export function drawRect ({ ctx, startX, startY, width, height, color }) {
+export function drawFillRect ({ ctx, startX, startY, width, height, color }) {
   ctx.fillStyle = color
   ctx.fillRect(startX, startY, width, height)
 }
