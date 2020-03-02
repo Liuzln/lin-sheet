@@ -1,6 +1,10 @@
 <template>
   <div id="app">
-    <lin-sheet />
+    <lin-sheet
+      :rows="rows"
+      :columns="columns"
+      :tableData="tableData"
+    />
   </div>
 </template>
 
@@ -14,12 +18,163 @@ export default {
   },
   data () {
     return {
-      sheetCanvasContext: ''
+      generateRowNumber: 50,
+      generateColumnNumber: 50,
+      rows: [],
+      columns: [],
+      tableData: []
     }
   },
-  mounted () {
+  created () {
+    this.mockData()
   },
   methods: {
+    // 模拟数据
+    mockData () {
+      for (let i = 0, len = this.generateRowNumber; i < len; i++) {
+        this.rows.push({
+          id: i,
+          height: 25
+        })
+      }
+      for (let i = 0, len = this.generateColumnNumber; i < len; i++) {
+        this.columns.push({
+          id: i,
+          width: 90
+        })
+      }
+      // 表格格式
+      this.tableData = [
+        [{
+          // 内容
+          content: '0-0',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }, {
+          // 内容
+          content: '0-1',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }, {
+          // 内容
+          content: '0-2',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }],
+        [{
+          // 内容
+          content: '1-0',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }, {
+          // 内容
+          content: '1-1',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }, {
+          // 内容
+          content: '1-2',
+          // 内容类型
+          contentType: 'text',
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        }]
+      ]
+    },
     handleClickSheet ({ x, y }) {
       console.log(x)
       console.log(y)

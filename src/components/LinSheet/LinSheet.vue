@@ -8,6 +8,7 @@
       :browserRatio="browserRatio"
       :rows="rows"
       :columns="columns"
+      :tableData="tableData"
       @s-click="handleClickSheet"
     />
     <!-- 选择框层 -->
@@ -31,14 +32,24 @@ export default {
     SheetLayer,
     EditLayer
   },
+  props: {
+    rows: {
+      type: Array,
+      required: true
+    },
+    columns: {
+      type: Array,
+      required: true
+    },
+    tableData: {
+      type: Array,
+      required: true
+    }
+  },
   data () {
     return {
-      generateRowNumber: 50,
-      generateColumnNumber: 50,
       sheetWidth: getInnerWidth(),
-      sheetHeight: getInnerHeight(),
-      rows: [],
-      columns: []
+      sheetHeight: getInnerHeight()
     }
   },
   computed: {
@@ -48,18 +59,6 @@ export default {
   },
   mounted () {
     window.addEventListener('resize', this.handleWindowResizeChange)
-    for (let i = 0, len = this.generateRowNumber; i < len; i++) {
-      this.rows.push({
-        id: i,
-        height: 25
-      })
-    }
-    for (let i = 0, len = this.generateColumnNumber; i < len; i++) {
-      this.columns.push({
-        id: i,
-        width: 90
-      })
-    }
   },
   methods: {
     // 处理窗口大小变化
