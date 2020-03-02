@@ -1,16 +1,20 @@
 export function drawVerticalLine ({ ctx, startX = 0, startY = 0, length, color, lineWidth = 1 }) {
+  ctx.beginPath()
   ctx.moveTo(startX, startY)
   ctx.lineTo(startX, startY + length)
   ctx.lineWidth = lineWidth
   ctx.strokeStyle = color
+  ctx.closePath()
   ctx.stroke()
 }
 
 export function drawHorizontalLine ({ ctx, startX = 0, startY = 0, length, color, lineWidth = 1 }) {
+  ctx.beginPath()
   ctx.moveTo(startX, startY)
   ctx.lineTo(startX + length, startY)
   ctx.lineWidth = lineWidth
   ctx.strokeStyle = color
+  ctx.closePath()
   ctx.stroke()
 }
 

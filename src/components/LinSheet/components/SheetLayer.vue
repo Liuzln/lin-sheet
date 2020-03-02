@@ -64,12 +64,18 @@ export default {
   data () {
     return {
       sheetCanvasContext: '',
-      canvasWidth: '', // canvas 宽度
-      canvasHeight: '', // canvas 高度
       canvasRatio: this.browserRatio // canvas 缩放比例
     }
   },
   computed: {
+    // canvas 宽度
+    canvasWidth: function () {
+      return evaluate(`${this.width} * ${this.browserRatio}`)
+    },
+    // canvas 高度
+    canvasHeight: function () {
+      return evaluate(`${this.height} * ${this.browserRatio}`)
+    },
     styleHeight: function () {
       let height = this.height
       if (this.canvasHeight && this.browserRatio) {
@@ -146,17 +152,14 @@ export default {
   methods: {
     // 绘制表格
     drawSheet () {
-      this.canvasWidth = 0
-      this.canvasHeight = 0
-      setTimeout(() => {
-        this.canvasWidth = evaluate(`${this.width} * ${this.browserRatio}`)
-        this.canvasHeight = evaluate(`${this.height} * ${this.browserRatio}`)
-        setTimeout(() => {
-          this.drawColumnHeader()
-          this.drawRowHeader()
-          this.drawCell()
-        }, 0)
-      }, 0)
+      this.$nextTick(() => {
+        // 清空画板
+        this.sheetCanvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
+        // 重新绘制
+        this.drawColumnHeader()
+        this.drawRowHeader()
+        this.drawCell()
+      })
     },
     // 渐变色
     getLinearGradient () {
