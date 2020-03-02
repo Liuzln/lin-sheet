@@ -11,7 +11,10 @@
 
 <script>
 import { evaluate } from '@/utils/math'
-import { drawVerticalLine, drawHorizontalLine, drawFillRect, drawText } from '@/utils/canvas'
+import {
+  clearContext, drawVerticalLine, drawHorizontalLine,
+  drawFillRect, drawText
+} from '@/utils/canvas'
 import { getColunmsName } from '@/utils/sheet'
 import { addEventListener } from '@/utils/event'
 
@@ -154,7 +157,7 @@ export default {
     drawSheet () {
       this.$nextTick(() => {
         // 清空画板
-        this.sheetCanvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
+        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
         // 重新绘制
         this.drawColumnHeader()
         this.drawRowHeader()
