@@ -99,7 +99,7 @@ export default {
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
-    this.drawSheet()
+    // this.drawSheet()
 
     // Ctrl+鼠标滚轮缩放
     addEventListener(window, 'mousewheel', (e) => {

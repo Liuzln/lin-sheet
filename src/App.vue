@@ -10,6 +10,7 @@
 
 <script>
 import LinSheet from './components/LinSheet'
+import TableManager from '@/services/TableManager'
 
 export default {
   name: 'app',
@@ -18,162 +19,21 @@ export default {
   },
   data () {
     return {
-      generateRowNumber: 50,
-      generateColumnNumber: 50,
       rows: [],
       columns: [],
       tableData: []
     }
   },
   created () {
-    this.mockData()
+    this.init()
   },
   methods: {
-    // 模拟数据
-    mockData () {
-      for (let i = 0, len = this.generateRowNumber; i < len; i++) {
-        this.rows.push({
-          id: i,
-          height: 25
-        })
-      }
-      for (let i = 0, len = this.generateColumnNumber; i < len; i++) {
-        this.columns.push({
-          id: i,
-          width: 90
-        })
-      }
-      // 表格格式
-      this.tableData = [
-        [{
-          // 内容
-          content: '0-0',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }, {
-          // 内容
-          content: '0-1',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }, {
-          // 内容
-          content: '0-2',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }],
-        [{
-          // 内容
-          content: '1-0',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }, {
-          // 内容
-          content: '1-1',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }, {
-          // 内容
-          content: '1-2',
-          // 内容类型
-          contentType: 'text',
-          // 单元格格式
-          format: {
-            fontSize: '12',
-            // 右边框
-            borderRight: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            },
-            // 下边框
-            borderBottom: {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: '#000000'
-            }
-          }
-        }]
-      ]
+    async init () {
+      const res = await TableManager.getTableData()
+      console.log('tableData:', res.data)
+      this.rows = res.data.rows
+      this.columns = res.data.columns
+      this.tableData = res.data.tableData
     },
     handleClickSheet ({ x, y }) {
       console.log(x)

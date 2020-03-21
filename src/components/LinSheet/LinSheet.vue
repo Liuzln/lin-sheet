@@ -53,8 +53,21 @@ export default {
     }
   },
   computed: {
-    browserRatio: () => {
+    browserRatio: function () {
       return window.devicePixelRatio || 1
+    },
+    table: function () {
+      const { rows, columns, tableData } = this
+      return {
+        rows,
+        columns,
+        tableData
+      }
+    }
+  },
+  watch: {
+    'table': function () {
+      this.$refs.sheetLayer.drawSheet()
     }
   },
   mounted () {
