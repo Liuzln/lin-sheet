@@ -181,15 +181,15 @@ export default {
         ctx: ctx,
         startX: 0,
         startY: 0,
-        width: evaluate(`${lineStartX} * ${this.canvasRatio}`),
-        height: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
+        width: lineStartX * this.canvasRatio,
+        height: this.columnHeight * this.canvasRatio,
         color: 'RGB(242, 244, 247)'
       })
       drawVerticalLine({
         ctx: ctx,
-        startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
+        startX: lineStartX * this.canvasRatio,
         startY: 0,
-        length: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
+        length: this.columnHeight * this.canvasRatio,
         color: this.getLinearGradient()
       })
       // 绘制列标题
@@ -198,31 +198,31 @@ export default {
         // 绘制背景色块
         drawFillRect({
           ctx: ctx,
-          startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
+          startX: lineStartX * this.canvasRatio,
           startY: 0,
-          width: evaluate(`${column.width} * ${this.canvasRatio}`),
-          height: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
+          width: column.width * this.canvasRatio,
+          height: this.columnHeight * this.canvasRatio,
           color: 'RGB(242, 244, 247)'
         })
         // 绘制分割线段
         drawVerticalLine({
           ctx: ctx,
-          startX: evaluate(`${lineStartX} * ${this.canvasRatio}`),
+          startX: lineStartX * this.canvasRatio,
           startY: 0,
-          length: evaluate(`${this.columnHeight} * ${this.canvasRatio}`),
+          length: this.columnHeight * this.canvasRatio,
           color: 'RGB(215, 218, 222)'
         })
         // 绘制列标题
         drawText({
           ctx: ctx,
-          x: evaluate(`(${lineStartX} + (${column.width} * 0.5)) * ${this.canvasRatio}`),
-          y: evaluate(`13 * ${this.canvasRatio}`),
+          x: (lineStartX + (column.width * 0.5)) * this.canvasRatio,
+          y: 13 * this.canvasRatio,
           content: getColunmsName(i),
-          fontSize: `${evaluate(`12 * ${this.canvasRatio}`)}px`,
+          fontSize: `${12 * this.canvasRatio}px`,
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)'
         })
-        lineStartX = evaluate(`${lineStartX} + ${column.width}`)
+        lineStartX = lineStartX + column.width
       }
     },
     // 绘制行头部
@@ -234,39 +234,39 @@ export default {
         drawFillRect({
           ctx: ctx,
           startX: 0,
-          startY: evaluate(`${startY} * ${this.canvasRatio}`),
-          width: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
-          height: evaluate(`${row.height} * ${this.canvasRatio}`),
+          startY: startY * this.canvasRatio,
+          width: this.columnsStartX * this.canvasRatio,
+          height: row.height * this.canvasRatio,
           color: 'RGB(242, 244, 247)'
         })
         drawVerticalLine({
           ctx: ctx,
-          startX: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
-          startY: evaluate(`${startY} * ${this.canvasRatio}`),
-          length: evaluate(`${row.height} * ${this.canvasRatio}`),
+          startX: this.columnsStartX * this.canvasRatio,
+          startY: startY * this.canvasRatio,
+          length: row.height * this.canvasRatio,
           color: 'RGB(215, 218, 222)'
         })
         drawHorizontalLine({
           ctx: ctx,
           startX: 0,
-          startY: evaluate(`${startY} * ${this.canvasRatio}`),
-          length: evaluate(`${this.columnsStartX} * ${this.canvasRatio}`),
+          startY: startY * this.canvasRatio,
+          length: this.columnsStartX * this.canvasRatio,
           color: 'RGB(215, 218, 222)'
         })
         drawText({
           ctx: ctx,
-          x: evaluate(`${24} * ${this.canvasRatio}`),
-          y: evaluate(`(${startY} + (${row.height} * ${0.5})) * ${this.canvasRatio}`),
-          content: evaluate(`${i} + 1`),
-          fontSize: `${evaluate(`12 * ${this.canvasRatio}`)}px`,
+          x: 24 * this.canvasRatio,
+          y: (startY + (row.height * 0.5)) * this.canvasRatio,
+          content: i + 1,
+          fontSize: `${12 * this.canvasRatio}px`,
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)'
         })
-        startY = evaluate(`${startY} + ${row.height}`)
+        startY = startY + row.height
       }
     },
     // 绘制单元格
-    drawCell () {
+    async drawCell () {
       const ctx = this.sheetCanvasContext
       let startX = this.columnsStartX
       let startY = this.rowStartY
@@ -278,39 +278,39 @@ export default {
           const colunmWidth = this.columns[rowIndex].width
           drawFillRect({
             ctx: ctx,
-            startX: evaluate(`${startX} * ${this.canvasRatio}`),
-            startY: evaluate(`${startY} * ${this.canvasRatio}`),
-            width: evaluate(`${colunmWidth} * ${this.canvasRatio}`),
-            height: evaluate(`${rowHeight} * ${this.canvasRatio}`),
+            startX: startX * this.canvasRatio,
+            startY: startY * this.canvasRatio,
+            width: colunmWidth * this.canvasRatio,
+            height: rowHeight * this.canvasRatio,
             color: 'RGB(255, 255, 255)'
           })
           drawVerticalLine({
             ctx: ctx,
-            startX: evaluate(`(${startX} + ${colunmWidth}) * ${this.canvasRatio}`),
-            startY: evaluate(`${startY} * ${this.canvasRatio}`),
-            length: evaluate(`${rowHeight} * ${this.canvasRatio}`),
+            startX: (startX + colunmWidth) * this.canvasRatio,
+            startY: startY * this.canvasRatio,
+            length: rowHeight * this.canvasRatio,
             color: 'RGB(215, 218, 222)'
           })
           drawHorizontalLine({
             ctx: ctx,
-            startX: evaluate(`${startX} * ${this.canvasRatio}`),
-            startY: evaluate(`(${startY} + ${rowHeight}) * ${this.canvasRatio}`),
-            length: evaluate(`${colunmWidth} * ${this.canvasRatio}`),
+            startX: startX * this.canvasRatio,
+            startY: (startY + rowHeight) * this.canvasRatio,
+            length: colunmWidth * this.canvasRatio,
             color: 'RGB(215, 218, 222)'
           })
           drawText({
             ctx: ctx,
-            x: evaluate(`(${startX} + ${colunmWidth} / 2) * ${this.canvasRatio}`),
-            y: evaluate(`(${startY} + (${rowHeight} * ${0.5})) * ${this.canvasRatio}`),
+            x: (startX + colunmWidth / 2) * this.canvasRatio,
+            y: (startY + (rowHeight * 0.5)) * this.canvasRatio,
             content: row.content,
-            fontSize: `${evaluate(`${row.format.fontSize} * ${this.canvasRatio}`)}px`,
+            fontSize: `${row.format.fontSize * this.canvasRatio}px`,
             fontFamily: 'bold 黑体',
             fontColor: 'RGB(0, 0, 0)'
           })
-          startX = evaluate(`${startX} + ${colunmWidth}`)
+          startX = startX + colunmWidth
         }
         startX = this.columnsStartX
-        startY = evaluate(`${startY} + ${rowHeight}`)
+        startY = startY + rowHeight
       }
     },
     handleClickSheet (e) {
