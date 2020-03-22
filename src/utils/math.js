@@ -5,7 +5,7 @@ const math = create(all)
 
 math.config({
   number: 'BigNumber', // 默认使用 BigNumber
-  precision: 16
+  precision: 6
 })
 
 /**

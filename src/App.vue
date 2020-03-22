@@ -29,7 +29,13 @@ export default {
   },
   methods: {
     async init () {
-      const res = await TableManager.getTableData()
+      // 获取表格数据
+      const res = await TableManager.getTableData({
+        colunmIndex: 1,
+        colunmSize: 30,
+        rowIndex: 1,
+        rowSize: 100
+      })
       console.log('tableData:', res.data)
       this.rows = res.data.rows
       this.columns = res.data.columns
