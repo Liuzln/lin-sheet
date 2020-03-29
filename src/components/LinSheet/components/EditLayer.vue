@@ -1,12 +1,21 @@
 <template>
-  <div class="edit-layer">
-    <div class="edit-container">
-      <!-- 单元格内容 包含内容、格式 -->
-      <canvas ref="editContent" class="edit-content"></canvas>
-      <!-- 光标效果 -->
-      <div class="edit-cursor"></div>
-    </div>
+  <div
+    class="edit-container"
+    :style="`left: ${ currentSelect.x }px; top: ${ currentSelect.y }px`"
+  >
+    <!-- 选择框 -->
+    <div
+      class="edit-border"
+      v-show="currentSelect.columnNum > 0 && currentSelect.rowNum > 0"
+      :style="`width: ${ columns[currentSelect.columnNum].width - 1 }px; height: ${ rows[currentSelect.rowNum].height - 1 }px`"
+    />
+    <!-- 单元格文本内容 -->
+    <canvas ref="editContent" class="edit-content"></canvas>
+    <!-- 光标效果 -->
+    <div class="edit-cursor"></div>
+    <!-- 文本区域 用于存放单元格填写数据 -->
     <textarea
+      class="edit-textarea"
       ref="CellTextarea"
       @input="handleCellInput"
     />
@@ -19,6 +28,33 @@ import { IEVersion } from '@/utils/util'
 export default {
   name: 'editLayer',
   components: {
+  },
+  props: {
+    // 浏览器缩放比例
+    browserRatio: {
+      type: Number,
+      required: true
+    },
+    // 行
+    rows: {
+      type: Array,
+      required: true
+    },
+    // 列
+    columns: {
+      type: Array,
+      required: true
+    },
+    // 表格数据
+    tableData: {
+      type: Array,
+      required: true
+    },
+    // 当前选择
+    currentSelect: {
+      type: Object,
+      required: true
+    }
   },
   data () {
     return {
@@ -162,19 +198,29 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.edit-layer {
+.edit-container {
   position: absolute;
-  top: 0;
-  left: 0;
 
-  .edit-container {
-    .edit-cursor {
-      width: 1px;
-      background: #000;
-      vertical-align: center;
-      animation: edit-cursor 1s ease infinite;
-      position: absolute;
-    }
+  .edit-border {
+    position: absolute;
+    outline: none;
+    box-sizing: content-box;
+    resize: none;
+    background: RGBA(0, 0, 0, 0);
+    border: 2px solid RGB(34, 167, 242);
+    transform: translate(-1px, -2px);
+  }
+
+  .edit-cursor {
+    width: 1px;
+    background: #000;
+    vertical-align: center;
+    animation: edit-cursor 1s ease infinite;
+    position: absolute;
+  }
+
+  .edit-textarea {
+    display: none;
   }
 }
 

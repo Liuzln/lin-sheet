@@ -1,5 +1,18 @@
 <template>
   <div id="lin-sheet">
+    <!-- 选择层 -->
+    <div
+      class="edit-layer"
+      @click="handleClickSheet"
+    />
+    <!-- 修改层 -->
+    <edit-layer
+      :browserRatio="browserRatio"
+      :rows="rows"
+      :columns="columns"
+      :tableData="tableData"
+      :currentSelect="currentSelect"
+    />
     <!-- 单元格绘制 -->
     <sheet-layer
       ref="sheetLayer"
@@ -9,11 +22,7 @@
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
-      @s-click="handleClickSheet"
     />
-    <!-- 选择框层 -->
-    <!-- 修改层 -->
-    <edit-layer />
   </div>
 </template>
 
@@ -49,7 +58,13 @@ export default {
   data () {
     return {
       sheetWidth: getInnerWidth(),
-      sheetHeight: getInnerHeight()
+      sheetHeight: getInnerHeight(),
+      currentSelect: {
+        columnNum: 0,
+        rowNum: 0,
+        x: 0,
+        y: 0
+      }
     }
   },
   computed: {
@@ -81,9 +96,41 @@ export default {
       this.sheetHeight = getInnerHeight() // 获取当前窗口高度
       this.$refs.sheetLayer.drawSheet()
     },
-    handleClickSheet ({ x, y }) {
-      console.log(x)
-      console.log(y)
+    handleClickSheet (e) {
+      // console.log(event)
+      const offsetX = e.offsetX
+      const offsetY = e.offsetY
+      // console.log(offsetX)
+      // console.log(offsetY)
+      // 判断点击哪个单元格
+      let currentX = 0
+      let columnNum = 0
+      let currrntY = 0
+      let rowNum = 0
+      for (let len = this.columns.length; columnNum < len; columnNum++) {
+        const columnWidth = this.columns[columnNum].width
+        if (currentX + columnWidth >= offsetX) {
+          this.currentSelect.x = currentX
+          this.currentSelect.columnNum = columnNum
+          break
+        } else {
+          if (columnNum === 0) {
+            currentX += 45
+          } else {
+            currentX += columnWidth
+          }
+        }
+      }
+      for (let len = this.rows.length; rowNum < len; rowNum++) {
+        const rowHeight = this.rows[rowNum].height
+        if (currrntY + rowHeight >= offsetY) {
+          this.currentSelect.y = currrntY
+          this.currentSelect.rowNum = rowNum
+          break
+        } else {
+          currrntY += rowHeight
+        }
+      }
     }
   }
 }
@@ -91,4 +138,12 @@ export default {
 
 <style lang="scss">
 @import './index.scss';
+.edit-layer {
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
 </style>
