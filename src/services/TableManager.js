@@ -7,17 +7,17 @@ class TableManager extends BaseModule {
 
   /**
    * 获取表格数据
-   * @param { Number } colunmIndex 列页数
-   * @param { Number } colunmSize 列大小
+   * @param { Number } columnIndex 列页数
+   * @param { Number } columnSize 列大小
    * @param { Number } rowIndex 行页数
    * @param { Number } rowSize 行大小
    */
-  getTableData ({ colunmIndex = 1, colunmSize = 30, rowIndex = 1, rowSize = 100 }) {
+  getTableData ({ columnIndex = 1, columnSize = 30, rowIndex = 1, rowSize = 100 }) {
     return this.post('/sheet/data', {
       rowIndex: rowIndex,
       rowSize: rowSize,
-      colunmIndex: colunmIndex,
-      colunmSize: colunmSize
+      columnIndex: columnIndex,
+      columnSize: columnSize
     })
   }
 }

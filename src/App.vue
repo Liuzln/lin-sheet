@@ -31,8 +31,8 @@ export default {
     async init () {
       // 获取表格数据
       const res = await TableManager.getTableData({
-        colunmIndex: 1,
-        colunmSize: 30,
+        columnIndex: 1,
+        columnSize: 30,
         rowIndex: 1,
         rowSize: 100
       })

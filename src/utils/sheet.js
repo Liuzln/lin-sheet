@@ -1,12 +1,12 @@
-const colunmsName = [
+const columnsName = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N',
   'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 ]
 
-export function getColunmsName (index) {
+export function getColumnsName (index) {
   let content = ''
   if (index < 26) {
-    content = colunmsName[index]
+    content = columnsName[index]
   } else {
     let temp = index - 26
     let count = 0
@@ -14,8 +14,8 @@ export function getColunmsName (index) {
       temp -= 26
       count++
     }
-    content = colunmsName[count]
-    content += colunmsName[index % 26]
+    content = columnsName[count]
+    content += columnsName[index % 26]
   }
   return content
 }

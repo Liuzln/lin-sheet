@@ -4,7 +4,6 @@
     class="sheet-canvas"
     :width="canvasWidth"
     :height="canvasHeight"
-    @click="handleClickSheet"
     :style="`width: ${ styleWidth }px; height: ${ styleHeight }px`"
   />
 </template>
@@ -15,7 +14,7 @@ import {
   clearContext, drawVerticalLine, drawHorizontalLine,
   drawFillRect, drawText
 } from '@/utils/canvas'
-import { getColunmsName } from '@/utils/sheet'
+import { getColumnsName } from '@/utils/sheet'
 import { addEventListener } from '@/utils/event'
 
 export default {
@@ -217,7 +216,7 @@ export default {
           ctx: ctx,
           x: (lineStartX + (column.width * 0.5)) * this.canvasRatio,
           y: 13 * this.canvasRatio,
-          content: getColunmsName(i),
+          content: getColumnsName(i),
           fontSize: `${12 * this.canvasRatio}px`,
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)'
@@ -275,18 +274,18 @@ export default {
         const rowHeight = this.rows[columnIndex].height
         for (let rowIndex = 0, len2 = column.length; rowIndex < len2; rowIndex++) {
           const row = column[rowIndex]
-          const colunmWidth = this.columns[rowIndex].width
+          const columnWidth = this.columns[rowIndex].width
           drawFillRect({
             ctx: ctx,
             startX: startX * this.canvasRatio,
             startY: startY * this.canvasRatio,
-            width: colunmWidth * this.canvasRatio,
+            width: columnWidth * this.canvasRatio,
             height: rowHeight * this.canvasRatio,
             color: 'RGB(255, 255, 255)'
           })
           drawVerticalLine({
             ctx: ctx,
-            startX: (startX + colunmWidth) * this.canvasRatio,
+            startX: (startX + columnWidth) * this.canvasRatio,
             startY: startY * this.canvasRatio,
             length: rowHeight * this.canvasRatio,
             color: 'RGB(215, 218, 222)'
@@ -295,30 +294,23 @@ export default {
             ctx: ctx,
             startX: startX * this.canvasRatio,
             startY: (startY + rowHeight) * this.canvasRatio,
-            length: colunmWidth * this.canvasRatio,
+            length: columnWidth * this.canvasRatio,
             color: 'RGB(215, 218, 222)'
           })
           drawText({
             ctx: ctx,
-            x: (startX + colunmWidth / 2) * this.canvasRatio,
+            x: (startX + columnWidth / 2) * this.canvasRatio,
             y: (startY + (rowHeight * 0.5)) * this.canvasRatio,
             content: row.content,
             fontSize: `${row.format.fontSize * this.canvasRatio}px`,
             fontFamily: 'bold 黑体',
             fontColor: 'RGB(0, 0, 0)'
           })
-          startX = startX + colunmWidth
+          startX = startX + columnWidth
         }
         startX = this.columnsStartX
         startY = startY + rowHeight
       }
-    },
-    handleClickSheet (e) {
-      console.log(e)
-      const offsetX = e.offsetX
-      const offsetY = e.offsetY
-      console.log(offsetX)
-      console.log(offsetY)
     }
   }
 }

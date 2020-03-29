@@ -7,8 +7,8 @@ const tableData = (options) => {
 
   const rowIndex = body.rowIndex
   const rowSize = body.rowSize
-  const colunmIndex = body.colunmIndex
-  const colunmSize = body.colunmSize
+  const columnIndex = body.columnIndex
+  const columnSize = body.columnSize
 
   // 行数据
   const rows = []
@@ -18,7 +18,7 @@ const tableData = (options) => {
 
   // 列数据
   const columns = []
-  for (let i = (colunmIndex - 1) * colunmSize, len = colunmIndex * colunmSize; i < len; i++) {
+  for (let i = (columnIndex - 1) * columnSize, len = columnIndex * columnSize; i < len; i++) {
     columns.push({ id: i, width: 90 })
   }
 
@@ -26,10 +26,10 @@ const tableData = (options) => {
   const tableData = []
   for (let ri = (rowIndex - 1) * rowSize, riLen = rowIndex * rowSize; ri < riLen; ri++) {
     const tempList = []
-    for (let ci = (colunmIndex - 1) * colunmSize, ciLen = colunmIndex * colunmSize; ci < ciLen; ci++) {
+    for (let ci = (columnIndex - 1) * columnSize, ciLen = columnIndex * columnSize; ci < ciLen; ci++) {
       tempList.push({
         // 内容
-        content: `${ri}-${ci}`,
+        content: ri < 10 && ci < 10 ? `${ri}-${ci}` : '',
         // 内容类型
         contentType: 'text',
         // 单元格格式
