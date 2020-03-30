@@ -40,7 +40,7 @@ export default {
     },
     rowStartY: {
       type: Number,
-      default: 24.25
+      default: 24
     },
     // 列
     columns: {
@@ -50,7 +50,7 @@ export default {
     // 列的开始位置
     columnsStartX: {
       type: Number,
-      default: 45.25
+      default: 45
     },
     // 列的高度
     columnHeight: {

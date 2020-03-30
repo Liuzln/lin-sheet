@@ -1,23 +1,28 @@
 <template>
   <div
+    v-if="currentSelect.startColumnIndex > 0 && currentSelect.startRowIndex > 0"
     class="edit-container"
     :style="`left: ${ currentSelect.x }px; top: ${ currentSelect.y }px`"
   >
     <!-- 选择框 -->
     <div
       class="edit-border"
-      v-show="currentSelect.columnNum > 0 && currentSelect.rowNum > 0"
-      :style="`width: ${ columns[currentSelect.columnNum].width - 1 }px; height: ${ rows[currentSelect.rowNum].height - 1 }px`"
+      :style="`width: ${ cellWidth }px; height: ${ cellHeight }px`"
     />
     <!-- 单元格文本内容 -->
-    <canvas ref="editContent" class="edit-content"></canvas>
+    <canvas
+      ref="editContent"
+      class="edit-content"
+      :style="`width: ${ cellWidth }px; height: ${ cellHeight }px`"
+    />
     <!-- 光标效果 -->
-    <div class="edit-cursor"></div>
-    <!-- 文本区域 用于存放单元格填写数据 -->
+    <div class="edit-cursor" />
+    <!-- 文本区域 用于暂存单元格填写数据 -->
     <textarea
       class="edit-textarea"
       ref="CellTextarea"
       @input="handleCellInput"
+      @keydown.delete="handleCellDelete"
     />
   </div>
 </template>
@@ -58,13 +63,66 @@ export default {
   },
   data () {
     return {
-      editContentContext: ''
+      editContentContext: '',
+      editLock: false
+    }
+  },
+  computed: {
+    cellWidth: function () {
+      let width = 90
+      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0) {
+        width = this.columns[this.currentSelect.startColumnIndex].width - 2
+      }
+      return width
+    },
+    cellHeight: function () {
+      let height = 25
+      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0) {
+        height = this.rows[this.currentSelect.startRowIndex].height - 2
+      }
+      return height
+    },
+    listenChange: function () {
+      const { startColumnIndex, endColumnIndex, startRowIndex, endRowIndex, x, y } = this.currentSelect
+      return {
+        startColumnIndex,
+        endColumnIndex,
+        startRowIndex,
+        endRowIndex,
+        x,
+        y
+      }
+    }
+  },
+  watch: {
+    'listenChange': function () {
+      console.log('listenChange')
+      if (this.currentSelect.startRowIndex > 0 && this.currentSelect.startColumnIndex > 0) {
+        this.$refs.CellTextarea.focus()
+        this.editContentContext = this.$refs.editContent.getContext('2d')
+      }
     }
   },
   mounted () {
+    this.$refs.CellTextarea.focus()
+    this.$refs.CellTextarea.addEventListener('compositionstart', () => {
+      this.editLock = true
+    })
+    this.$refs.CellTextarea.addEventListener('compositionend', (e) => {
+      this.editLock = false
+      const inputValue = e.data
+      // 修改单元格内容
+      this.$emit('changeTableData', {
+        columnIndex: this.currentSelect.startColumnIndex,
+        rowIndex: this.currentSelect.startRowIndex,
+        type: 'content',
+        data: inputValue
+      })
+      // 清空输入框
+      this.$refs.CellTextarea.value = ''
+    })
     // 绑定粘贴事件
     this.$refs.CellTextarea.addEventListener('paste', this.handleCellPaste)
-    this.editContentContext = this.$refs.editContent.getContext('2d')
   },
   methods: {
     // 粘贴
@@ -106,37 +164,60 @@ export default {
       // const isPaste = inputType === 'insertFromPaste' // 是否为黏贴
       const inputValue = e.target.value
       console.log('inputValue:', inputValue)
-      // 判断正常输入或黏贴行为
-      if (isInsert) {
-        // 输入模式
-        this.sheetData += inputValue
-      } else {
-        // // 黏贴模式
-        // // 判断是否含有换行符和tab
-        // // %09 === tab %0A === enter
-        // const escapeInputValue = escape(inputValue)
-        // if (escapeInputValue.indexOf('%09') > -1 || escapeInputValue.indexOf('%0A') > -1) {
-        //   const rows = this.queryAllRow(escapeInputValue)
-        //   // 遍历每一行
-        //   for (const row of rows) {
-        //     // 查询行的全部单元格
-        //     const cells = this.queryAllCell(row)
-        //     const cellsValue = []
-        //     // 遍历单元格
-        //     for (const cell of cells) {
-        //       const cellValue = unescape(cell)
-        //       console.log(cellValue)
-        //       cellsValue.push(cellValue)
-        //     }
-        //     this.list.push(cellsValue)
-        //   }
-        // } else {
-        //   // 输入模型
-        //   this.value += inputValue
-        // }
+      console.log('editLock', this.editLock)
+      if (!this.editLock) {
+        // 判断正常输入或黏贴行为
+        if (isInsert) {
+          // 输入模式
+          // 修改单元格内容
+          this.$emit('changeTableData', {
+            columnIndex: this.currentSelect.startColumnIndex,
+            rowIndex: this.currentSelect.startRowIndex,
+            type: 'content',
+            data: inputValue
+          })
+        } else {
+          // 黏贴模式
+          // 判断是否含有换行符和tab
+          // %09 === tab %0A === enter
+          const escapeInputValue = escape(inputValue)
+          if (escapeInputValue.indexOf('%09') > -1 || escapeInputValue.indexOf('%0A') > -1) {
+            const rows = this.queryAllRow(escapeInputValue)
+            // 遍历每一行
+            for (const row of rows) {
+              // 查询行的全部单元格
+              const cells = this.queryAllCell(row)
+              const cellsValue = []
+              // 遍历单元格
+              for (const cell of cells) {
+                const cellValue = unescape(cell)
+                console.log(cellValue)
+                cellsValue.push(cellValue)
+              }
+              this.list.push(cellsValue)
+            }
+          } else {
+            // 输入模型
+            // 修改单元格内容
+            this.$emit('changeTableData', {
+              columnIndex: this.currentSelect.startColumnIndex,
+              rowIndex: this.currentSelect.startRowIndex,
+              type: 'content',
+              data: inputValue
+            })
+          }
+        }
+        // 清空富文本输入框
+        this.$refs.CellTextarea.value = ''
       }
-      // 清空富文本输入框
-      this.$refs.CellTextarea.value = ''
+    },
+    // 删除
+    handleCellDelete (e) {
+      console.log(e)
+      this.$emit('deleteTableData', {
+        columnIndex: this.currentSelect.startColumnIndex,
+        rowIndex: this.currentSelect.startRowIndex
+      })
     },
     /*
       解析粘贴文本
@@ -211,6 +292,10 @@ export default {
     transform: translate(-1px, -2px);
   }
 
+  .edit-content {
+    position: absolute;
+  }
+
   .edit-cursor {
     width: 1px;
     background: #000;
@@ -220,7 +305,10 @@ export default {
   }
 
   .edit-textarea {
-    display: none;
+    opacity: 0;
+    position: absolute;
+    top: 13px;
+    left: 0;
   }
 }
 
