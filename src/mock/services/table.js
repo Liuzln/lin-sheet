@@ -35,6 +35,10 @@ const tableData = (options) => {
         // 单元格格式
         format: {
           fontSize: '12',
+          fontFamily: 'bold 黑体',
+          fontColor: 'RGB(0, 0, 0)',
+          textBaseline: 'middle',
+          textAlign: 'end',
           // 右边框
           borderRight: {
             borderWidth: '1px',

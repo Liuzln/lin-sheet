@@ -273,7 +273,7 @@ export default {
         const column = this.tableData[columnIndex]
         const rowHeight = this.rows[columnIndex].height
         for (let rowIndex = 0, len2 = column.length; rowIndex < len2; rowIndex++) {
-          const row = column[rowIndex]
+          const cell = column[rowIndex]
           const columnWidth = this.columns[rowIndex].width
           drawFillRect({
             ctx: ctx,
@@ -297,14 +297,28 @@ export default {
             length: columnWidth * this.canvasRatio,
             color: 'RGB(215, 218, 222)'
           })
+          // 默认左对齐
+          let textX = startX * this.canvasRatio
+          if (cell.format.textAlign === 'start' || cell.format.textAlign === 'left') {
+            // 左对齐 将文字X轴坐标放到单元格左边
+            textX = (startX + 6) * this.canvasRatio
+          } else if (cell.format.textAlign === 'center') {
+            // 水平居中 将文字X轴坐标放到单元格中间
+            textX = (startX + (columnWidth / 2)) * this.canvasRatio
+          } else if (cell.format.textAlign === 'end' || cell.format.textAlign === 'right') {
+            // 右对齐 将文字X轴坐标放到单元格右边
+            textX = (startX + columnWidth - 6) * this.canvasRatio
+          }
           drawText({
             ctx: ctx,
-            x: (startX + columnWidth / 2) * this.canvasRatio,
+            x: textX,
             y: (startY + (rowHeight * 0.5)) * this.canvasRatio,
-            content: row.content,
-            fontSize: `${row.format.fontSize * this.canvasRatio}px`,
-            fontFamily: 'bold 黑体',
-            fontColor: 'RGB(0, 0, 0)'
+            content: cell.content,
+            fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
+            fontFamily: cell.format.fontFamily,
+            fontColor: cell.format.fontColor,
+            textAlign: cell.format.textAlign,
+            textBaseline: cell.format.textBaseline
           })
           startX = startX + columnWidth
         }
