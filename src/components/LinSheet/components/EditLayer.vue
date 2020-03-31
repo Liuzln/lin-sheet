@@ -16,7 +16,10 @@
       :style="`width: ${ cellWidth }px; height: ${ cellHeight }px`"
     />
     <!-- 光标效果 -->
-    <div class="edit-cursor" />
+    <div
+      class="edit-cursor"
+      :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px; left: 3px; top: 3px; height: 18px;`"
+    />
     <!-- 文本区域 用于暂存单元格填写数据 -->
     <textarea
       class="edit-textarea"
@@ -83,12 +86,13 @@ export default {
       return height
     },
     listenChange: function () {
-      const { startColumnIndex, endColumnIndex, startRowIndex, endRowIndex, x, y } = this.currentSelect
+      const { startColumnIndex, endColumnIndex, startRowIndex, endRowIndex, isEditMode, x, y } = this.currentSelect
       return {
         startColumnIndex,
         endColumnIndex,
         startRowIndex,
         endRowIndex,
+        isEditMode,
         x,
         y
       }
@@ -97,6 +101,8 @@ export default {
   watch: {
     'listenChange': function () {
       console.log('listenChange')
+      console.log(this.currentSelect.startRowIndex)
+      console.log(this.currentSelect.startColumnIndex)
       if (this.currentSelect.startRowIndex > 0 && this.currentSelect.startColumnIndex > 0) {
         this.$refs.CellTextarea.focus()
         this.editContentContext = this.$refs.editContent.getContext('2d')
@@ -297,6 +303,7 @@ export default {
   }
 
   .edit-cursor {
+    z-index: 5;
     width: 1px;
     background: #000;
     vertical-align: center;

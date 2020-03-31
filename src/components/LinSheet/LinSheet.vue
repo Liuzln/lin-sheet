@@ -66,12 +66,13 @@ export default {
       sheetWidth: getInnerWidth(),
       sheetHeight: getInnerHeight(),
       currentSelect: {
-        startColumnIndex: 1,
-        endColumnIndex: 1,
-        startRowIndex: 1,
-        endRowIndex: 1,
-        x: 45,
-        y: 24
+        startColumnIndex: 1, // 列开始索引 单选时用的坐标
+        endColumnIndex: 1, // 列结束索引 多选时用的坐标
+        startRowIndex: 1, // 行开始索引 单选时用的坐标
+        endRowIndex: 1, // 行结束索引 多选时用的坐标
+        isEditMode: false, // 单元格编辑模式
+        x: 45, // 单元格左上角位置X轴
+        y: 24 // 单元格左上角位置Y轴
       }
     }
   },
@@ -113,16 +114,22 @@ export default {
       // 判断点击哪个单元格
       let currentX = 0
       let columnIndex = 0
+      let isRepeatClickColumn = false
       let currrntY = 0
       let rowIndex = 0
+      let isRepeatClickRow = false
       for (let len = this.columns.length; columnIndex < len; columnIndex++) {
         const columnWidth = this.columns[columnIndex].width
         if (currentX >= offsetX) {
-          this.currentSelect.startColumnIndex = columnIndex - 1
-          if (this.currentSelect.startColumnIndex > 0) {
-            this.currentSelect.x = currentX - columnWidth
+          if (this.currentSelect.startColumnIndex === columnIndex - 1) {
+            isRepeatClickColumn = true
           } else {
-            this.currentSelect.x = 0
+            this.currentSelect.startColumnIndex = columnIndex - 1
+            if (this.currentSelect.startColumnIndex > 0) {
+              this.currentSelect.x = currentX - columnWidth
+            } else {
+              this.currentSelect.x = 0
+            }
           }
           break
         } else {
@@ -136,11 +143,15 @@ export default {
       for (let len = this.rows.length; rowIndex < len; rowIndex++) {
         const rowHeight = this.rows[rowIndex].height
         if (currrntY >= offsetY) {
-          this.currentSelect.startRowIndex = rowIndex - 1
-          if (this.currentSelect.startRowIndex > 0) {
-            this.currentSelect.y = currrntY - rowHeight
+          if (this.currentSelect.startRowIndex === rowIndex - 1) {
+            isRepeatClickRow = true
           } else {
-            this.currentSelect.y = 0
+            this.currentSelect.startRowIndex = rowIndex - 1
+            if (this.currentSelect.startRowIndex > 0) {
+              this.currentSelect.y = currrntY - rowHeight
+            } else {
+              this.currentSelect.y = 0
+            }
           }
           break
         } else {
@@ -150,6 +161,11 @@ export default {
             currrntY += rowHeight
           }
         }
+      }
+      if (isRepeatClickColumn && isRepeatClickRow) {
+        this.currentSelect.isEditMode = true
+      } else {
+        this.currentSelect.isEditMode = false
       }
     },
     // 处理修改表格数据
