@@ -1,10 +1,5 @@
 <template>
   <div id="lin-sheet">
-    <!-- 选择层 -->
-    <div
-      class="edit-layer"
-      @click="handleClickSheet"
-    />
     <!-- 修改层 -->
     <edit-layer
       :browserRatio="browserRatio"
@@ -14,6 +9,11 @@
       :currentSelect="currentSelect"
       @changeTableData="handleChangeTableData"
       @deleteTableData="handleDeleteTableData"
+    />
+    <!-- 选择层 -->
+    <div
+      class="edit-layer"
+      @click="handleClickSheet"
     />
     <!-- 单元格绘制 -->
     <sheet-layer
@@ -71,8 +71,10 @@ export default {
         startRowIndex: 1, // 行开始索引 单选时用的坐标
         endRowIndex: 1, // 行结束索引 多选时用的坐标
         isEditMode: false, // 单元格编辑模式
-        x: 45, // 单元格左上角位置X轴
-        y: 24 // 单元格左上角位置Y轴
+        cellX: 45, // 单元格左上角位置X轴
+        cellY: 24, // 单元格左上角位置Y轴
+        clickX: 0, // 鼠标点击位置
+        clickY: 0 // 鼠标点击位置
       }
     }
   },
@@ -109,8 +111,10 @@ export default {
       // console.log(event)
       const offsetX = e.offsetX
       const offsetY = e.offsetY
-      console.log(offsetX)
-      console.log(offsetY)
+      console.log('offsetX:', offsetX)
+      console.log('offsetY:', offsetY)
+      this.currentSelect.clickX = offsetX
+      this.currentSelect.clickY = offsetY
       // 判断点击哪个单元格
       let currentX = 0
       let columnIndex = 0
@@ -126,9 +130,9 @@ export default {
           } else {
             this.currentSelect.startColumnIndex = columnIndex - 1
             if (this.currentSelect.startColumnIndex > 0) {
-              this.currentSelect.x = currentX - columnWidth
+              this.currentSelect.cellX = currentX - columnWidth
             } else {
-              this.currentSelect.x = 0
+              this.currentSelect.cellX = 0
             }
           }
           break
@@ -148,9 +152,9 @@ export default {
           } else {
             this.currentSelect.startRowIndex = rowIndex - 1
             if (this.currentSelect.startRowIndex > 0) {
-              this.currentSelect.y = currrntY - rowHeight
+              this.currentSelect.cellY = currrntY - rowHeight
             } else {
-              this.currentSelect.y = 0
+              this.currentSelect.cellY = 0
             }
           }
           break
@@ -169,14 +173,16 @@ export default {
       }
     },
     // 处理修改表格数据
-    handleChangeTableData ({ columnIndex, rowIndex, type, data }) {
+    handleChangeTableData ({ columnIndex, rowIndex, type, textIndex, data }) {
       console.log(columnIndex)
       console.log(rowIndex)
       console.log(type)
+      console.log(textIndex)
       console.log(data)
       if (type === 'content') {
         console.log(data)
-        this.tableData[rowIndex - 1][columnIndex - 1].content += data
+        const content = this.tableData[rowIndex - 1][columnIndex - 1].content
+        this.tableData[rowIndex - 1][columnIndex - 1].content = content.slice(0, textIndex) + data + content.slice(textIndex)
       }
       this.$refs.sheetLayer.drawSheet()
     },

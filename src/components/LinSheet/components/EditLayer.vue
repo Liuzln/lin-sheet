@@ -1,25 +1,37 @@
 <template>
-  <div
-    v-if="currentSelect.startColumnIndex > 0 && currentSelect.startRowIndex > 0"
-    class="edit-container"
-    :style="`left: ${ currentSelect.x }px; top: ${ currentSelect.y }px`"
-  >
-    <!-- 选择框 -->
+  <div>
     <div
-      class="edit-border"
-      :style="`width: ${ cellWidth }px; height: ${ cellHeight }px`"
-    />
-    <!-- 单元格文本内容 -->
-    <canvas
-      ref="editContent"
-      class="edit-content"
-      :style="`width: ${ cellWidth }px; height: ${ cellHeight }px`"
-    />
-    <!-- 光标效果 -->
-    <div
-      class="edit-cursor"
-      :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px; left: 3px; top: 3px; height: 18px;`"
-    />
+      v-if="currentSelect.startColumnIndex > 0 && currentSelect.startRowIndex > 0"
+      class="edit-container"
+      :style="`left: ${ currentSelect.cellX }px; top: ${ currentSelect.cellY }px; z-index: ${ currentSelect.isEditMode ? 2 : 0 };`"
+    >
+      <!-- 单元格框选区域 -->
+      <canvas
+        ref="editSelection"
+        class="edit-selection"
+        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px; z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
+        @click="handleClickEditSelection"
+      />
+      <!-- 选择框 -->
+      <div
+        class="edit-border"
+        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
+      />
+      <!-- 单元格文本内容 -->
+      <canvas
+        ref="editContent"
+        class="edit-content"
+        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
+      />
+      <!-- 光标效果 -->
+      <div
+        class="edit-cursor"
+        :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px;
+                left: ${ cursor.x }px;
+                top: ${ cursor.y }px;
+                height: ${ cursor.height }px;`"
+      />
+    </div>
     <!-- 文本区域 用于暂存单元格填写数据 -->
     <textarea
       class="edit-textarea"
@@ -67,7 +79,15 @@ export default {
   data () {
     return {
       editContentContext: '',
-      editLock: false
+      editLock: false, // 编辑锁 用于处理中文输入
+      cursor: {
+        textIndex: 0, // 当前光标位置
+        x: 3,
+        y: 3,
+        height: 18
+      },
+      // 内容选择图
+      cellSelectionMap: []
     }
   },
   computed: {
@@ -85,27 +105,43 @@ export default {
       }
       return height
     },
+    cell: function () {
+      if (this.tableData.length > 0) {
+        return this.tableData[this.currentSelect.startRowIndex - 1][this.currentSelect.startColumnIndex - 1]
+      }
+      return {}
+    },
     listenChange: function () {
-      const { startColumnIndex, endColumnIndex, startRowIndex, endRowIndex, isEditMode, x, y } = this.currentSelect
+      const { startColumnIndex, endColumnIndex,
+        startRowIndex, endRowIndex, isEditMode,
+        cellX, cellY, clickX, clickY
+      } = this.currentSelect
       return {
         startColumnIndex,
         endColumnIndex,
         startRowIndex,
         endRowIndex,
         isEditMode,
-        x,
-        y
+        cellX,
+        cellY,
+        clickX,
+        clickY
       }
     }
   },
   watch: {
     'listenChange': function () {
-      console.log('listenChange')
-      console.log(this.currentSelect.startRowIndex)
-      console.log(this.currentSelect.startColumnIndex)
+      // console.log('listenChange')
+      // console.log(this.currentSelect.startRowIndex)
+      // console.log(this.currentSelect.startColumnIndex)
       if (this.currentSelect.startRowIndex > 0 && this.currentSelect.startColumnIndex > 0) {
-        this.$refs.CellTextarea.focus()
-        this.editContentContext = this.$refs.editContent.getContext('2d')
+        if (this.currentSelect.isEditMode) {
+          this.handleClickEditSelection()
+        }
+        this.$nextTick(() => {
+          this.$refs.CellTextarea.focus()
+          this.editContentContext = this.$refs.editContent.getContext('2d')
+        })
       }
     }
   },
@@ -122,6 +158,7 @@ export default {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
         type: 'content',
+        textIndex: this.cursor.textIndex,
         data: inputValue
       })
       // 清空输入框
@@ -131,10 +168,182 @@ export default {
     this.$refs.CellTextarea.addEventListener('paste', this.handleCellPaste)
   },
   methods: {
+    // 根据单元格内容 生成选择Map
+    _generateCellSelectionMap ({ ctx, textAlign, content }) {
+      this.cellSelectionMap = []
+      // 计算每个文字的宽度
+      const chinesePattern = new RegExp('[\u4E00-\u9FA5]+')
+      const englishPattern = new RegExp('[A-Za-z]+')
+      const numberPattern = new RegExp('^[0-9]*$')
+      for (let i = 0, len = content.length; i < len; i++) {
+        const text = content[i]
+        if (chinesePattern.test(text)) {
+          // 判断是否为中文
+          this.cellSelectionMap.push(Number(ctx.measureText(text).width) + 1.925)
+        } else if (englishPattern.test(text)) {
+          // 判断是否为英文
+          this.cellSelectionMap.push(Number(ctx.measureText(text).width) + 1.125)
+        } else if (numberPattern.test(text)) {
+          // 判断是否为数字
+          this.cellSelectionMap.push(Number(ctx.measureText(text).width) + 1.125)
+        } else {
+          // 判断是否为英文
+          this.cellSelectionMap.push(Number(ctx.measureText(text).width) + 1.125)
+        }
+      }
+    },
+    _getTextWidth ({ ctx, text }) {
+      let textWidth = ctx.measureText(text).width
+      const chinesePattern = new RegExp('[\u4E00-\u9FA5]+')
+      const englishPattern = new RegExp('[A-Za-z]+')
+      const numberPattern = new RegExp('^[0-9]*$')
+      for (let i = 0, len = text.length; i < len; i++) {
+        const char = text[i]
+        if (chinesePattern.test(char)) {
+          // 判断是否为中文
+          textWidth += 1.925
+        } else if (englishPattern.test(char)) {
+          // 判断是否为英文
+          textWidth += 1.125
+        } else if (numberPattern.test(char)) {
+          // 判断是否为数字
+          textWidth += 1.125
+        } else {
+          // 判断是否为英文
+          textWidth += 1.125
+        }
+      }
+      return textWidth
+    },
+    /**
+     * 更新光标位置
+     * @param { Object } ctx - canvas 上下文
+     * @param { Object } textAlign - 文字对齐方式
+     * @param { String } content - 内容
+     * @param { Number } cellWidth - 单元格宽度
+     * @param { Number } clickX - 点击位置X
+     * @param { Number } clickY - 点击位置Y
+     */
+    _updateCursorPos ({ ctx, textAlign, content, cellWidth, clickX, clickY }) {
+      // console.log('ctx:', ctx)
+      // console.log('content:', content)
+      // console.log('cellWidth:', cellWidth)
+      // console.log('clickX:', clickX)
+      // console.log('clickY:', clickY)
+      // 根据单元格内容生成选择Map
+      this._generateCellSelectionMap({
+        ctx: ctx,
+        textAlign: textAlign,
+        content: content
+      })
+      // 文字宽度
+      const contentWidth = this._getTextWidth({
+        ctx: ctx,
+        text: content
+      })
+      let startX = 0
+      if (textAlign === 'start' || textAlign === 'left') {
+        // 左对齐的文字：
+        // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = 6
+      } else if (textAlign === 'center') {
+        // 居中对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth / 2 - contentWidth / 2
+      } else if (textAlign === 'end' || textAlign === 'right') {
+        // 右对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth - contentWidth - 5
+      }
+      let textIndex = 0
+      for (let len = this.cellSelectionMap.length; textIndex < len; textIndex++) {
+        if (startX < clickX) {
+          startX += this.cellSelectionMap[textIndex]
+        } else {
+          break
+        }
+      }
+      this.cursor.x = startX
+      this.cursor.textIndex = textIndex
+    },
+    /**
+     * 根据文字位置，更新光标位置
+     * @param { Object } ctx - canvas 上下文
+     * @param { Object } textAlign - 文字对齐方式
+     * @param { String } content - 内容
+     * @param { Number } cellWidth - 单元格宽度
+     * @param { Number } clickX - 点击位置X
+     */
+    _updateCursorPosByTextIndex ({ ctx, textAlign, content, cellWidth, textIndex }) {
+      // console.log('ctx:', ctx)
+      // console.log('content:', content)
+      // console.log('cellWidth:', cellWidth)
+      // console.log('textIndex:', textIndex)
+      // 根据单元格内容生成选择Map
+      this._generateCellSelectionMap({
+        ctx: ctx,
+        content: content
+      })
+      // 文字宽度
+      const contentWidth = this._getTextWidth({
+        ctx: ctx,
+        text: content
+      })
+      let startX = 0
+      if (textAlign === 'start' || textAlign === 'left') {
+        // 左对齐的文字：
+        // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = 6
+      } else if (textAlign === 'center') {
+        // 居中对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth / 2 - contentWidth / 2
+      } else if (textAlign === 'end' || textAlign === 'right') {
+        // 右对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth - contentWidth - 5
+      }
+      for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
+        if (textIndex > i) {
+          startX += this.cellSelectionMap[i]
+        } else {
+          break
+        }
+      }
+      this.cursor.textIndex = textIndex
+      this.cursor.x = startX
+    },
+    // 点击单元格
+    handleClickEditSelection (event) {
+      console.log('handleClickCell')
+      let offsetX = 0
+      let offsetY = 0
+      if (event) {
+        offsetX = event.offsetX
+        offsetY = event.offsetY
+      } else {
+        // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+        offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+        offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+      }
+      // console.log('offsetX:', offsetX)
+      // console.log('offsetY:', offsetY)
+      this.$refs.CellTextarea.focus()
+      // 更新光标位置
+      this._updateCursorPos({
+        ctx: this.editContentContext,
+        textAlign: this.cell.format.textAlign,
+        content: this.cell.content,
+        cellWidth: this.$refs.editSelection.offsetWidth,
+        clickX: offsetX,
+        clickY: offsetY
+      })
+    },
     // 粘贴
     // ClipboardEvent.clipboardData: https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent/clipboardData
     // 常见 MIME 类型列表: https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
     handleCellPaste (e) {
+      console.log('handleCellPaste')
       console.log('event:', e)
       // 是否为IE浏览器
       const isIE = IEVersion() > -1
@@ -160,10 +369,11 @@ export default {
         clipboardData = clipboard.getData('text/plain')
       }
       console.log('clipboardData:', clipboardData)
-      this.sheetData += this.parsePasteText(clipboardData)
+      this.parsePasteText(clipboardData)
     },
     // 输入
     handleCellInput (e) {
+      console.log('handleCellInput')
       console.log(e)
       const inputType = e.inputType
       const isInsert = inputType === 'insertText' // 是否为输入
@@ -176,42 +386,7 @@ export default {
         if (isInsert) {
           // 输入模式
           // 修改单元格内容
-          this.$emit('changeTableData', {
-            columnIndex: this.currentSelect.startColumnIndex,
-            rowIndex: this.currentSelect.startRowIndex,
-            type: 'content',
-            data: inputValue
-          })
-        } else {
-          // 黏贴模式
-          // 判断是否含有换行符和tab
-          // %09 === tab %0A === enter
-          const escapeInputValue = escape(inputValue)
-          if (escapeInputValue.indexOf('%09') > -1 || escapeInputValue.indexOf('%0A') > -1) {
-            const rows = this.queryAllRow(escapeInputValue)
-            // 遍历每一行
-            for (const row of rows) {
-              // 查询行的全部单元格
-              const cells = this.queryAllCell(row)
-              const cellsValue = []
-              // 遍历单元格
-              for (const cell of cells) {
-                const cellValue = unescape(cell)
-                console.log(cellValue)
-                cellsValue.push(cellValue)
-              }
-              this.list.push(cellsValue)
-            }
-          } else {
-            // 输入模型
-            // 修改单元格内容
-            this.$emit('changeTableData', {
-              columnIndex: this.currentSelect.startColumnIndex,
-              rowIndex: this.currentSelect.startRowIndex,
-              type: 'content',
-              data: inputValue
-            })
-          }
+          this.handleChangeTableData(inputValue)
         }
         // 清空富文本输入框
         this.$refs.CellTextarea.value = ''
@@ -225,6 +400,24 @@ export default {
         rowIndex: this.currentSelect.startRowIndex
       })
     },
+    // 修改表格数据
+    handleChangeTableData (inputValue) {
+      this.$emit('changeTableData', {
+        columnIndex: this.currentSelect.startColumnIndex,
+        rowIndex: this.currentSelect.startRowIndex,
+        type: 'content',
+        textIndex: this.cursor.textIndex,
+        data: inputValue
+      })
+      // 更新光标位置
+      this._updateCursorPosByTextIndex({
+        ctx: this.editContentContext,
+        textAlign: this.cell.format.textAlign,
+        content: this.cell.content,
+        cellWidth: this.$refs.editSelection.offsetWidth,
+        textIndex: this.cursor.textIndex + 1
+      })
+    },
     /*
       解析粘贴文本
       判断是否含有enter和tab
@@ -236,21 +429,34 @@ export default {
       if (escapeInputValue.indexOf('%09') > -1 || escapeInputValue.indexOf('%0A') > -1) {
         const rows = this.queryAllRow(escapeInputValue)
         // 遍历每一行
-        for (const row of rows) {
+        for (let r = 0, len1 = rows.length; r < len1; r++) {
+          const row = rows[r]
           // 查询行的全部单元格
           const cells = this.queryAllCell(row)
-          const cellsValue = []
           // 遍历单元格
-          for (const cell of cells) {
+          for (let c = 0, len2 = cells.length; c < len2; c++) {
+            const cell = cells[c]
             const cellValue = unescape(cell)
             console.log(cellValue)
-            cellsValue.push(cellValue)
+            this.$emit('changeTableData', {
+              columnIndex: this.currentSelect.startColumnIndex + c,
+              rowIndex: this.currentSelect.startRowIndex + r,
+              type: 'content',
+              textIndex: this.cursor.textIndex,
+              data: cellValue
+            })
           }
-          this.list.push(cellsValue)
         }
       } else {
         // 输入模型
-        this.sheetData += data
+        // 修改单元格内容
+        this.$emit('changeTableData', {
+          columnIndex: this.currentSelect.startColumnIndex,
+          rowIndex: this.currentSelect.startRowIndex,
+          type: 'content',
+          textIndex: this.cursor.textIndex,
+          data: data
+        })
       }
     },
     queryAllRow (inputValue) {
@@ -288,8 +494,17 @@ export default {
 .edit-container {
   position: absolute;
 
+  .edit-selection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: text;
+  }
+
   .edit-border {
     position: absolute;
+    top: 0;
+    left: 0;
     outline: none;
     box-sizing: content-box;
     resize: none;
@@ -310,13 +525,14 @@ export default {
     animation: edit-cursor 1s ease infinite;
     position: absolute;
   }
+}
 
-  .edit-textarea {
-    opacity: 0;
-    position: absolute;
-    top: 13px;
-    left: 0;
-  }
+.edit-textarea {
+  opacity: 0;
+  z-index: -1;
+  position: absolute;
+  top: 13px;
+  left: 0;
 }
 
 @keyframes edit-cursor {
