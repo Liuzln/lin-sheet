@@ -4,11 +4,15 @@
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
+      :width="width"
+      :height="height"
     />
   </div>
 </template>
 
 <script>
+import { getInnerWidth, getInnerHeight } from '@/utils/util'
+
 import LinSheet from './components/LinSheet'
 import TableManager from '@/services/TableManager'
 
@@ -21,13 +25,24 @@ export default {
     return {
       rows: [],
       columns: [],
-      tableData: []
+      tableData: [],
+      width: getInnerWidth(),
+      height: getInnerHeight()
     }
   },
   created () {
     this.init()
   },
+  mounted () {
+    window.addEventListener('resize', this.handleWindowResizeChange)
+  },
   methods: {
+    // 处理窗口大小变化
+    handleWindowResizeChange () {
+      console.log('handleWindowResizeChange')
+      this.width = getInnerWidth() // 获取当前窗口宽度
+      this.height = getInnerHeight() // 获取当前窗口高度
+    },
     async init () {
       // 获取表格数据
       const res = await TableManager.getTableData({

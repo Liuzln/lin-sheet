@@ -6,12 +6,14 @@
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
+      :customTableDataKey="customTableDataKey"
       :currentSelect="currentSelect"
       @changeTableData="handleChangeTableData"
       @deleteTableData="handleDeleteTableData"
     />
     <!-- 选择层 -->
     <div
+      :id="tableKey"
       class="edit-layer"
       @click="handleClickSheet"
     />
@@ -21,11 +23,17 @@
       :width="sheetWidth"
       :height="sheetHeight"
       :browserRatio="browserRatio"
-      :columnsStartX="columnsStartX"
-      :rowStartY="rowStartY"
+      :columnStartWidth="columnStartWidth"
+      :rowHeaderHeight="rowHeaderHeight"
       :rows="rows"
+      :isCustomRowName="isCustomRowName"
+      :customRowNameKey="customRowNameKey"
       :columns="columns"
+      :isCustomColumnName="isCustomColumnName"
+      :customColumnNameKey="customColumnNameKey"
       :tableData="tableData"
+      :customTableDataKey="customTableDataKey"
+      :isBindZoomEventListener="isBindZoomEventListener"
     />
   </div>
 </template>
@@ -34,7 +42,7 @@
 // TODO: 根据坐标改变光标
 // TODO: 根据点击位置选择单元格、列、行
 // import debounce from 'lodash.debounce'
-import { getInnerWidth, getInnerHeight } from '@/utils/util'
+import uuidv1 from 'uuid/v1'
 
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
@@ -46,39 +54,101 @@ export default {
     EditLayer
   },
   props: {
+    // 当前选择的表格Key 用于多个表格时判断目前点击哪个表格
+    currentSelectTableKey: {
+      type: String
+    },
+    // 表格Key
+    tableKey: {
+      type: String,
+      default: uuidv1()
+    },
+    // 行头部高度
+    rowHeaderHeight: {
+      type: Number,
+      default: 24
+    },
+    // 表格行
     rows: {
       type: Array,
       required: true
     },
+    // 是否使用自定义行名称
+    isCustomRowName: {
+      type: Boolean,
+      default: false
+    },
+    // 自定义列名称的Key
+    customRowNameKey: {
+      type: String,
+      default: 'name'
+    },
+    // 列开始宽度
+    columnStartWidth: {
+      type: Number,
+      default: 45
+    },
+    // 表格字段
     columns: {
       type: Array,
       required: true
     },
+    // 是否使用自定义列名称
+    isCustomColumnName: {
+      type: Boolean,
+      default: false
+    },
+    // 自定义列名称的Key
+    customColumnNameKey: {
+      type: String,
+      default: 'name'
+    },
+    // 表格数据
     tableData: {
       type: Array,
       required: true
+    },
+    // 自定义表格数据Key
+    customTableDataKey: {
+      type: String,
+      default: 'content'
+    },
+    // 表格宽度
+    width: {
+      type: Number,
+      required: true
+    },
+    // 表格高度
+    height: {
+      type: Number,
+      required: true
+    },
+    // 是否绑定缩放事件监听器
+    isBindZoomEventListener: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
     return {
-      columnsStartX: 45,
-      rowStartY: 24,
-      sheetWidth: getInnerWidth(),
-      sheetHeight: getInnerHeight(),
+      sheetWidth: this.width,
+      sheetHeight: this.height,
+      // 当前选择
       currentSelect: {
         startColumnIndex: 1, // 列开始索引 单选时用的坐标
         endColumnIndex: 1, // 列结束索引 多选时用的坐标
         startRowIndex: 1, // 行开始索引 单选时用的坐标
         endRowIndex: 1, // 行结束索引 多选时用的坐标
         isEditMode: false, // 单元格编辑模式
-        cellX: 45, // 单元格左上角位置X轴
-        cellY: 24, // 单元格左上角位置Y轴
+        cellX: this.columnStartWidth, // 单元格左上角位置X轴
+        cellY: this.rowHeaderHeight, // 单元格左上角位置Y轴
         clickX: 0, // 鼠标点击位置
         clickY: 0 // 鼠标点击位置
       }
     }
   },
   computed: {
+    // 浏览器缩放比例
     browserRatio: function () {
       return window.devicePixelRatio || 1
     },
@@ -92,6 +162,19 @@ export default {
     }
   },
   watch: {
+    'currentSelectTableKey': function () {
+      this.currentSelect = {
+        startColumnIndex: 0,
+        endColumnIndex: 0,
+        startRowIndex: 0,
+        endRowIndex: 0,
+        isEditMode: false,
+        cellX: 0,
+        cellY: 0,
+        clickX: 0,
+        clickY: 0
+      }
+    },
     'table': function () {
       this.$refs.sheetLayer.drawSheet()
     }
@@ -103,32 +186,34 @@ export default {
     // 处理窗口大小变化
     handleWindowResizeChange () {
       console.log('handleWindowResizeChange')
-      this.sheetWidth = getInnerWidth() // 获取当前窗口宽度
-      this.sheetHeight = getInnerHeight() // 获取当前窗口高度
       this.$refs.sheetLayer.drawSheet()
     },
+    // 处理点击表格
     handleClickSheet (e) {
       // console.log(event)
-      const offsetX = e.offsetX
-      const offsetY = e.offsetY
-      console.log('offsetX:', offsetX)
-      console.log('offsetY:', offsetY)
-      this.currentSelect.clickX = offsetX
-      this.currentSelect.clickY = offsetY
-      // 判断点击哪个单元格
+      // 鼠标点击位置
+      this.currentSelect.clickX = e.offsetX
+      this.currentSelect.clickY = e.offsetY
       let currentX = 0
       let columnIndex = 0
       let isRepeatClickColumn = false
       let currrntY = 0
       let rowIndex = 0
       let isRepeatClickRow = false
-      for (let len = this.columns.length; columnIndex < len; columnIndex++) {
-        const columnWidth = this.columns[columnIndex].width
-        if (currentX >= offsetX) {
-          if (this.currentSelect.startColumnIndex === columnIndex - 1) {
+      // 判断点击X轴上的哪一个
+      for (let len = this.columns.length; columnIndex <= len; columnIndex++) {
+        let columnWidth = 0
+        if (columnIndex === 0) {
+          columnWidth = this.columnStartWidth
+        } else {
+          columnWidth = this.columns[columnIndex - 1].width
+        }
+        currentX += columnWidth
+        if (currentX >= this.currentSelect.clickX) {
+          if (this.currentSelect.startColumnIndex === columnIndex) {
             isRepeatClickColumn = true
           } else {
-            this.currentSelect.startColumnIndex = columnIndex - 1
+            this.currentSelect.startColumnIndex = columnIndex
             if (this.currentSelect.startColumnIndex > 0) {
               this.currentSelect.cellX = currentX - columnWidth
             } else {
@@ -136,21 +221,22 @@ export default {
             }
           }
           break
-        } else {
-          if (columnIndex === 0) {
-            currentX += this.columnsStartX
-          } else {
-            currentX += columnWidth
-          }
         }
       }
-      for (let len = this.rows.length; rowIndex < len; rowIndex++) {
-        const rowHeight = this.rows[rowIndex].height
-        if (currrntY >= offsetY) {
-          if (this.currentSelect.startRowIndex === rowIndex - 1) {
+      // 判断点击Y轴上的哪一个
+      for (let len = this.rows.length; rowIndex <= len; rowIndex++) {
+        let rowHeight = 0
+        if (rowIndex === 0) {
+          rowHeight = this.rowHeaderHeight
+        } else {
+          rowHeight = this.rows[rowIndex - 1].height
+        }
+        currrntY += rowHeight
+        if (currrntY >= this.currentSelect.clickY) {
+          if (this.currentSelect.startRowIndex === rowIndex) {
             isRepeatClickRow = true
           } else {
-            this.currentSelect.startRowIndex = rowIndex - 1
+            this.currentSelect.startRowIndex = rowIndex
             if (this.currentSelect.startRowIndex > 0) {
               this.currentSelect.cellY = currrntY - rowHeight
             } else {
@@ -158,14 +244,9 @@ export default {
             }
           }
           break
-        } else {
-          if (columnIndex === 0) {
-            currrntY += this.rowStartY
-          } else {
-            currrntY += rowHeight
-          }
         }
       }
+      // 判断是否为二次点击
       if (isRepeatClickColumn && isRepeatClickRow) {
         this.currentSelect.isEditMode = true
       } else {
@@ -181,8 +262,16 @@ export default {
       console.log(data)
       if (type === 'content') {
         console.log(data)
-        const content = this.tableData[rowIndex - 1][columnIndex - 1].content
-        this.tableData[rowIndex - 1][columnIndex - 1].content = content.slice(0, textIndex) + data + content.slice(textIndex)
+        console.log('customTableDataKey:', this.customTableDataKey)
+        const cell = this.tableData[rowIndex - 1][columnIndex - 1]
+        const content = cell[this.customTableDataKey]
+        if (cell.contentType === 'text') {
+          if (content.length > 0) {
+            cell[this.customTableDataKey] = content.slice(0, textIndex) + data + content.slice(textIndex)
+          } else {
+            cell[this.customTableDataKey] += data
+          }
+        }
       }
       this.$refs.sheetLayer.drawSheet()
     },
@@ -198,7 +287,12 @@ export default {
 </script>
 
 <style lang="scss">
-@import './index.scss';
+#lin-sheet {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .edit-layer {
   z-index: 1;
   position: absolute;

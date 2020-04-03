@@ -29,7 +29,7 @@ const tableData = (options) => {
     for (let ci = (columnIndex - 1) * columnSize, ciLen = columnIndex * columnSize; ci < ciLen; ci++) {
       tempList.push({
         // 内容
-        content: ri < 10 && ci < 10 ? `${ri}-${ci}` : '',
+        content: ri < 10 && ci < 10 ? `${ci}-${ri}` : '',
         // 内容类型
         contentType: 'text',
         // 单元格格式
@@ -38,7 +38,7 @@ const tableData = (options) => {
           fontFamily: 'bold 黑体',
           fontColor: 'RGB(0, 0, 0)',
           textBaseline: 'middle',
-          textAlign: 'end',
+          textAlign: 'right',
           // 右边框
           borderRight: {
             borderWidth: '1px',

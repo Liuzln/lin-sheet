@@ -70,6 +70,11 @@ export default {
       type: Array,
       required: true
     },
+    // 自定义表格数据Key
+    customTableDataKey: {
+      type: String,
+      required: true
+    },
     // 当前选择
     currentSelect: {
       type: Object,
@@ -91,26 +96,34 @@ export default {
     }
   },
   computed: {
+    // 单元格宽度
     cellWidth: function () {
       let width = 90
-      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0) {
-        width = this.columns[this.currentSelect.startColumnIndex].width - 2
+      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0 && this.columns.length < this.currentSelect.startColumnIndex) {
+        if (this.columns[this.currentSelect.startColumnIndex].width) {
+          width = this.columns[this.currentSelect.startColumnIndex].width - 2
+        }
       }
       return width
     },
+    // 单元格高度
     cellHeight: function () {
       let height = 25
-      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0) {
-        height = this.rows[this.currentSelect.startRowIndex].height - 2
+      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0 && this.rows.length < this.currentSelect.startRowIndex) {
+        if (this.rows[this.currentSelect.startRowIndex].height) {
+          height = this.rows[this.currentSelect.startRowIndex].height - 2
+        }
       }
       return height
     },
+    // 单元格数据
     cell: function () {
       if (this.tableData.length > 0) {
         return this.tableData[this.currentSelect.startRowIndex - 1][this.currentSelect.startColumnIndex - 1]
       }
       return {}
     },
+    // 用于监听传参修改
     listenChange: function () {
       const { startColumnIndex, endColumnIndex,
         startRowIndex, endRowIndex, isEditMode,
@@ -146,23 +159,18 @@ export default {
     }
   },
   mounted () {
+    this.editContentContext = this.$refs.editContent.getContext('2d')
     this.$refs.CellTextarea.focus()
+    // 处理单元格有中文输入、有候选词、一连串操作的情况
     this.$refs.CellTextarea.addEventListener('compositionstart', () => {
       this.editLock = true
     })
     this.$refs.CellTextarea.addEventListener('compositionend', (e) => {
-      this.editLock = false
-      const inputValue = e.data
-      // 修改单元格内容
-      this.$emit('changeTableData', {
-        columnIndex: this.currentSelect.startColumnIndex,
-        rowIndex: this.currentSelect.startRowIndex,
-        type: 'content',
-        textIndex: this.cursor.textIndex,
-        data: inputValue
-      })
-      // 清空输入框
-      this.$refs.CellTextarea.value = ''
+      if (this.editLock) {
+        this.editLock = false
+        const inputValue = e.data
+        this.handleChangeTableData(inputValue)
+      }
     })
     // 绑定粘贴事件
     this.$refs.CellTextarea.addEventListener('paste', this.handleCellPaste)
@@ -192,6 +200,7 @@ export default {
         }
       }
     },
+    // 获取文本宽度
     _getTextWidth ({ ctx, text }) {
       let textWidth = ctx.measureText(text).width
       const chinesePattern = new RegExp('[\u4E00-\u9FA5]+')
@@ -313,7 +322,7 @@ export default {
       this.cursor.textIndex = textIndex
       this.cursor.x = startX
     },
-    // 点击单元格
+    // 处理点击选择区域
     handleClickEditSelection (event) {
       console.log('handleClickCell')
       let offsetX = 0
@@ -333,7 +342,7 @@ export default {
       this._updateCursorPos({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
-        content: this.cell.content,
+        content: this.cell[this.customTableDataKey],
         cellWidth: this.$refs.editSelection.offsetWidth,
         clickX: offsetX,
         clickY: offsetY
@@ -388,8 +397,6 @@ export default {
           // 修改单元格内容
           this.handleChangeTableData(inputValue)
         }
-        // 清空富文本输入框
-        this.$refs.CellTextarea.value = ''
       }
     },
     // 删除
@@ -413,10 +420,12 @@ export default {
       this._updateCursorPosByTextIndex({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
-        content: this.cell.content,
+        content: this.cell[this.customTableDataKey],
         cellWidth: this.$refs.editSelection.offsetWidth,
-        textIndex: this.cursor.textIndex + 1
+        textIndex: this.cursor.textIndex + inputValue.length
       })
+      // 清空富文本输入框
+      this.$refs.CellTextarea.value = ''
     },
     /*
       解析粘贴文本
