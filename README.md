@@ -1,7 +1,7 @@
 # lin-sheet
 基于 canvas 的表格编辑器。
 
-## TODO
+## :white_check_mark: TODO
 - [x] 渲染表格和内容  
 - [x] 按比例缩放表格  
 - [x] 单元格选择  
