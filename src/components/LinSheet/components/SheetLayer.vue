@@ -135,18 +135,19 @@ export default {
     if (this.isBindZoomEventListener) {
       // Ctrl+鼠标滚轮缩放
       addEventListener(window, 'mousewheel', (e) => {
+        console.log(e)
         // 监测滚轮事件中是否按下了Ctrl键
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault()
           // 滚轮下滚
-          if (e.delta === -2) {
+          if (e.delta < 0) {
             if (this.ration > 0.5) {
               this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
               this.drawSheet()
             }
           }
           // 滚轮上滚
-          if (e.delta === 2) {
+          if (e.delta > 0) {
             if (this.ration < 3) {
               this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
               this.drawSheet()
