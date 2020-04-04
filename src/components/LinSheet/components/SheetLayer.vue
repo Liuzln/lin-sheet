@@ -15,7 +15,6 @@ import {
   drawFillRect, drawText
 } from '@/utils/canvas'
 import { getColumnsName } from '@/utils/sheet'
-import { addEventListener } from '@/utils/event'
 
 export default {
   name: 'editLayer',
@@ -28,8 +27,13 @@ export default {
       type: Number,
       required: true
     },
-    // 浏览器缩放比例
+    // 浏览器 缩放比例
     browserRatio: {
+      type: Number,
+      required: true
+    },
+    // canvas 缩放比例
+    canvasRatio: {
       type: Number,
       required: true
     },
@@ -96,8 +100,7 @@ export default {
   },
   data () {
     return {
-      sheetCanvasContext: '',
-      canvasRatio: this.browserRatio // canvas 缩放比例
+      sheetCanvasContext: ''
     }
   },
   computed: {
@@ -122,69 +125,16 @@ export default {
         width = evaluate(`${this.canvasWidth} / ${this.browserRatio}`)
       }
       return width
-    },
-    ration: function () {
-      return evaluate(`${this.canvasRatio} / ${this.browserRatio}`)
+    }
+  },
+  watch: {
+    'canvasRatio': function () {
+      this.drawSheet()
     }
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
     this.drawSheet()
-
-    // 判断是否监听缩放事件
-    if (this.isBindZoomEventListener) {
-      // Ctrl+鼠标滚轮缩放
-      addEventListener(window, 'mousewheel', (e) => {
-        console.log(e)
-        // 监测滚轮事件中是否按下了Ctrl键
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault()
-          // 滚轮下滚
-          if (e.delta < 0) {
-            if (this.ration > 0.5) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
-              this.drawSheet()
-            }
-          }
-          // 滚轮上滚
-          if (e.delta > 0) {
-            if (this.ration < 3) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
-              this.drawSheet()
-            }
-          }
-        }
-      }, { passive: false })
-
-      // 键盘快捷键缩放
-      addEventListener(window, 'keydown', (e) => {
-        // 按下Ctrl 以及以下任意一键：+ - 或 0
-        if (e.ctrlKey) {
-          // Ctrl +
-          if (e.code === 'Equal') {
-            e.preventDefault()
-            if (this.ration < 3) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
-              this.drawSheet()
-            }
-          }
-          // Ctrl -
-          if (e.code === 'Minus') {
-            e.preventDefault()
-            if (this.ration > 0.5) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
-              this.drawSheet()
-            }
-          }
-          // Ctrl 0
-          if (e.code === 'Digit0') {
-            e.preventDefault()
-            this.canvasRatio = this.browserRatio
-            this.drawSheet()
-          }
-        }
-      }, { passive: false })
-    }
   },
   methods: {
     // 绘制表格

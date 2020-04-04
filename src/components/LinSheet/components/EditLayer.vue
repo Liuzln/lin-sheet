@@ -3,33 +3,37 @@
     <div
       v-if="currentSelect.startColumnIndex > 0 && currentSelect.startRowIndex > 0"
       class="edit-container"
-      :style="`left: ${ currentSelect.cellX }px; top: ${ currentSelect.cellY }px; z-index: ${ currentSelect.isEditMode ? 2 : 0 };`"
+      :style="`left: ${ currentSelect.cellX }px;
+               top: ${ currentSelect.cellY }px;
+               z-index: ${ currentSelect.isEditMode ? 2 : 0 };`"
     >
       <!-- 单元格框选区域 -->
       <canvas
         ref="editSelection"
         class="edit-selection"
-        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px; z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
+        :style="`width: ${ cellWidth * ration }px;
+                 height: ${ cellHeight * ration }px;
+                 z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
         @click="handleClickEditSelection"
       />
       <!-- 选择框 -->
       <div
         class="edit-border"
-        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
+        :style="`width: ${ cellWidth * ration }px; height: ${ cellHeight * ration }px;`"
       />
       <!-- 单元格文本内容 -->
       <canvas
         ref="editContent"
         class="edit-content"
-        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
+        :style="`width: ${ cellWidth * ration }px; height: ${ cellHeight * ration }px;`"
       />
       <!-- 光标效果 -->
       <div
         class="edit-cursor"
         :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px;
-                left: ${ cursor.x }px;
-                top: ${ cursor.y }px;
-                height: ${ cursor.height }px;`"
+                 left: ${ cursor.x }px;
+                 top: ${ cursor.y }px;
+                 height: ${ cursor.height * ration }px;`"
       />
     </div>
     <!-- 文本区域 用于暂存单元格填写数据 -->
@@ -50,8 +54,18 @@ export default {
   components: {
   },
   props: {
-    // 浏览器缩放比例
+    // 缩放比例
+    ration: {
+      type: Number,
+      required: true
+    },
+    // 浏览器 缩放比例
     browserRatio: {
+      type: Number,
+      required: true
+    },
+    // 浏览器缩放比例
+    canvasRatio: {
       type: Number,
       required: true
     },

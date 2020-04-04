@@ -2,7 +2,9 @@
   <div id="lin-sheet">
     <!-- 修改层 -->
     <edit-layer
+      :ration="ration"
       :browserRatio="browserRatio"
+      :canvasRatio="canvasRatio"
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
@@ -23,6 +25,7 @@
       :width="sheetWidth"
       :height="sheetHeight"
       :browserRatio="browserRatio"
+      :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
       :rowHeaderHeight="rowHeaderHeight"
       :rows="rows"
@@ -43,6 +46,8 @@
 // TODO: 根据点击位置选择单元格、列、行
 // import debounce from 'lodash.debounce'
 import uuidv1 from 'uuid/v1'
+import { evaluate } from '@/utils/math'
+import { addEventListener } from '@/utils/event'
 
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
@@ -131,6 +136,7 @@ export default {
   },
   data () {
     return {
+      canvasRatio: 2,
       sheetWidth: this.width,
       sheetHeight: this.height,
       // 当前选择
@@ -159,9 +165,15 @@ export default {
         columns,
         tableData
       }
+    },
+    ration: function () {
+      return evaluate(`${this.canvasRatio} / ${this.browserRatio}`)
     }
   },
   watch: {
+    'browserRatio': function (value) {
+      this.canvasRatio = value
+    },
     'currentSelectTableKey': function () {
       this.currentSelect = {
         startColumnIndex: 0,
@@ -177,10 +189,63 @@ export default {
     },
     'table': function () {
       this.$refs.sheetLayer.drawSheet()
+    },
+    'ration': function (newValue, oldValue) {
+      this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
+      this.currentSelect.cellY = this.currentSelect.cellY / oldValue * newValue
     }
   },
   mounted () {
     window.addEventListener('resize', this.handleWindowResizeChange)
+    // 判断是否监听缩放事件
+    if (this.isBindZoomEventListener) {
+      // Ctrl+鼠标滚轮缩放
+      addEventListener(window, 'mousewheel', (e) => {
+        console.log(e)
+        // 监测滚轮事件中是否按下了Ctrl键
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          // 滚轮下滚
+          if (e.delta < 0) {
+            if (this.ration > 0.5) {
+              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+            }
+          }
+          // 滚轮上滚
+          if (e.delta > 0) {
+            if (this.ration < 3) {
+              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+            }
+          }
+        }
+      }, { passive: false })
+
+      // 键盘快捷键缩放
+      addEventListener(window, 'keydown', (e) => {
+        // 按下Ctrl 以及以下任意一键：+ - 或 0
+        if (e.ctrlKey) {
+          // Ctrl +
+          if (e.code === 'Equal') {
+            e.preventDefault()
+            if (this.ration < 3) {
+              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+            }
+          }
+          // Ctrl -
+          if (e.code === 'Minus') {
+            e.preventDefault()
+            if (this.ration > 0.5) {
+              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+            }
+          }
+          // Ctrl 0
+          if (e.code === 'Digit0') {
+            e.preventDefault()
+            this.canvasRatio = this.browserRatio
+          }
+        }
+      }, { passive: false })
+    }
   },
   methods: {
     // 处理窗口大小变化
@@ -204,9 +269,9 @@ export default {
       for (let len = this.columns.length; columnIndex <= len; columnIndex++) {
         let columnWidth = 0
         if (columnIndex === 0) {
-          columnWidth = this.columnStartWidth
+          columnWidth = this.columnStartWidth * this.ration
         } else {
-          columnWidth = this.columns[columnIndex - 1].width
+          columnWidth = this.columns[columnIndex - 1].width * this.ration
         }
         currentX += columnWidth
         if (currentX >= this.currentSelect.clickX) {
@@ -227,9 +292,9 @@ export default {
       for (let len = this.rows.length; rowIndex <= len; rowIndex++) {
         let rowHeight = 0
         if (rowIndex === 0) {
-          rowHeight = this.rowHeaderHeight
+          rowHeight = this.rowHeaderHeight * this.ration
         } else {
-          rowHeight = this.rows[rowIndex - 1].height
+          rowHeight = this.rows[rowIndex - 1].height * this.ration
         }
         currrntY += rowHeight
         if (currrntY >= this.currentSelect.clickY) {
