@@ -15,15 +15,24 @@ import {
   drawFillRect, drawText
 } from '@/utils/canvas'
 import { getColumnsName } from '@/utils/sheet'
+import { addEventListener } from '@/utils/event'
 
 export default {
-  name: 'editLayer',
+  name: 'sheetLayer',
   props: {
     width: {
       type: Number,
       required: true
     },
     height: {
+      type: Number,
+      required: true
+    },
+    columnTotalWidth: {
+      type: Number,
+      required: true
+    },
+    rowTotalHeight: {
       type: Number,
       required: true
     },
@@ -34,6 +43,10 @@ export default {
     },
     // canvas 缩放比例
     canvasRatio: {
+      type: Number,
+      required: true
+    },
+    ratio: {
       type: Number,
       required: true
     },
@@ -135,6 +148,7 @@ export default {
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
     this.drawSheet()
+    addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
   },
   methods: {
     // 绘制表格
@@ -147,6 +161,21 @@ export default {
         this.drawRowHeader()
         this.drawCell()
       })
+    },
+    // 处理表格滚动
+    handleSheetScrollX (e) {
+      // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
+      // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
+      const movementX = -e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio
+      // 表格平移
+      this.sheetCanvasContext.translate(movementX, 0)
+      setTimeout(() => {
+        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
+        // 重新绘制
+        this.drawColumnHeader()
+        this.drawRowHeader()
+        this.drawCell()
+      }, 0)
     },
     // 渐变色
     getLinearGradient () {

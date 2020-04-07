@@ -1,8 +1,20 @@
 <template>
   <div id="lin-sheet">
+    <!-- 水平滚动条 -->
+    <horizontal-scroll-bar
+      :canvasRatio="canvasRatio"
+      :columnStartWidth="columnStartWidth"
+      :columnTotalWidth="columnTotalWidth"
+      :windowWidth="sheetWidth"
+      :ratio="ratio"
+    />
+    <!-- 垂直滚动条 -->
+    <!-- <vertical-scroll-bar
+      :height="sheetHeight"
+    /> -->
     <!-- 修改层 -->
     <edit-layer
-      :ration="ration"
+      :ratio="ratio"
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
       :rows="rows"
@@ -24,8 +36,11 @@
       ref="sheetLayer"
       :width="sheetWidth"
       :height="sheetHeight"
+      :columnTotalWidth="columnTotalWidth"
+      :rowTotalHeight="rowTotalHeight"
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
+      :ratio="ratio"
       :columnStartWidth="columnStartWidth"
       :rowHeaderHeight="rowHeaderHeight"
       :rows="rows"
@@ -51,12 +66,16 @@ import { addEventListener } from '@/utils/event'
 
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
+import HorizontalScrollBar from './components/HorizontalScrollBar.vue'
+// import VerticalScrollBar from './components/VerticalScrollBar.vue'
 
 export default {
   name: 'LinSheet',
   components: {
     SheetLayer,
-    EditLayer
+    EditLayer,
+    HorizontalScrollBar
+    // VerticalScrollBar
   },
   props: {
     // 当前选择的表格Key 用于多个表格时判断目前点击哪个表格
@@ -136,9 +155,9 @@ export default {
   },
   data () {
     return {
-      canvasRatio: 2,
-      sheetWidth: this.width,
-      sheetHeight: this.height,
+      canvasRatio: 0,
+      sheetWidth: this.width, // 表格宽度
+      sheetHeight: this.height, // 表格高度
       // 当前选择
       currentSelect: {
         startColumnIndex: 1, // 列开始索引 单选时用的坐标
@@ -166,8 +185,30 @@ export default {
         tableData
       }
     },
-    ration: function () {
-      return evaluate(`${this.canvasRatio} / ${this.browserRatio}`)
+    ratio: function () {
+      let ratio = 1
+      if (this.canvasRatio && this.browserRatio) {
+        ratio = evaluate(`${this.canvasRatio} / ${this.browserRatio}`)
+      }
+      return ratio
+    },
+    // 列总宽度
+    columnTotalWidth: function () {
+      let totalWidth = this.columnStartWidth
+      for (let i = 0, len = this.columns.length; i < len; i++) {
+        const column = this.columns[i]
+        totalWidth += column.width
+      }
+      return totalWidth
+    },
+    // 行总高度
+    rowTotalHeight: function () {
+      let totalHeight = this.rowHeaderHeight
+      for (let i = 0, len = this.rows.length; i < len; i++) {
+        const row = this.rows[i]
+        totalHeight += row.height
+      }
+      return totalHeight
     }
   },
   watch: {
@@ -190,12 +231,13 @@ export default {
     'table': function () {
       this.$refs.sheetLayer.drawSheet()
     },
-    'ration': function (newValue, oldValue) {
+    'ratio': function (newValue, oldValue) {
       this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
       this.currentSelect.cellY = this.currentSelect.cellY / oldValue * newValue
     }
   },
   mounted () {
+    this.canvasRatio = window.devicePixelRatio || 1
     window.addEventListener('resize', this.handleWindowResizeChange)
     // 判断是否监听缩放事件
     if (this.isBindZoomEventListener) {
@@ -207,13 +249,13 @@ export default {
           e.preventDefault()
           // 滚轮下滚
           if (e.delta < 0) {
-            if (this.ration > 0.5) {
+            if (this.ratio > 0.5) {
               this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
             }
           }
           // 滚轮上滚
           if (e.delta > 0) {
-            if (this.ration < 3) {
+            if (this.ratio < 3) {
               this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
             }
           }
@@ -227,14 +269,14 @@ export default {
           // Ctrl +
           if (e.code === 'Equal') {
             e.preventDefault()
-            if (this.ration < 3) {
+            if (this.ratio < 3) {
               this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
             }
           }
           // Ctrl -
           if (e.code === 'Minus') {
             e.preventDefault()
-            if (this.ration > 0.5) {
+            if (this.ratio > 0.5) {
               this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
             }
           }
@@ -269,9 +311,9 @@ export default {
       for (let len = this.columns.length; columnIndex <= len; columnIndex++) {
         let columnWidth = 0
         if (columnIndex === 0) {
-          columnWidth = this.columnStartWidth * this.ration
+          columnWidth = this.columnStartWidth * this.ratio
         } else {
-          columnWidth = this.columns[columnIndex - 1].width * this.ration
+          columnWidth = this.columns[columnIndex - 1].width * this.ratio
         }
         currentX += columnWidth
         if (currentX >= this.currentSelect.clickX) {
@@ -292,9 +334,9 @@ export default {
       for (let len = this.rows.length; rowIndex <= len; rowIndex++) {
         let rowHeight = 0
         if (rowIndex === 0) {
-          rowHeight = this.rowHeaderHeight * this.ration
+          rowHeight = this.rowHeaderHeight * this.ratio
         } else {
-          rowHeight = this.rows[rowIndex - 1].height * this.ration
+          rowHeight = this.rows[rowIndex - 1].height * this.ratio
         }
         currrntY += rowHeight
         if (currrntY >= this.currentSelect.clickY) {
