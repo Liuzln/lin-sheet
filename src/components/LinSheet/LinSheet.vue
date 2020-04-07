@@ -173,7 +173,9 @@ export default {
         cellY: this.rowHeaderHeight, // 单元格左上角位置Y轴
         clickX: 0, // 鼠标点击位置
         clickY: 0 // 鼠标点击位置
-      }
+      },
+      currentX: 0,
+      currentY: 0
     }
   },
   computed: {
@@ -298,8 +300,18 @@ export default {
         }
       }, { passive: false })
     }
+    addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
+    addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
   },
   methods: {
+    // 处理表格滚动
+    handleSheetScrollX (e) {
+      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
+    },
+    // 处理表格滚动
+    handleSheetScrollY (e) {
+      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
+    },
     // 处理窗口大小变化
     handleWindowResizeChange () {
       console.log('handleWindowResizeChange')
@@ -309,8 +321,8 @@ export default {
     handleClickSheet (e) {
       // console.log(event)
       // 鼠标点击位置
-      this.currentSelect.clickX = e.offsetX
-      this.currentSelect.clickY = e.offsetY
+      this.currentSelect.clickX = e.offsetX + this.currentX
+      this.currentSelect.clickY = e.offsetY + this.currentY
       let currentX = 0
       let columnIndex = 0
       let isRepeatClickColumn = false

@@ -3,8 +3,8 @@
     <div
       v-if="currentSelect.startColumnIndex > 0 && currentSelect.startRowIndex > 0"
       class="edit-container"
-      :style="`left: ${ currentSelect.cellX }px;
-               top: ${ currentSelect.cellY }px;
+      :style="`left: ${ currentSelect.cellX - currentX }px;
+               top: ${ currentSelect.cellY - currentY }px;
                z-index: ${ currentSelect.isEditMode ? 2 : 1 };`"
     >
       <!-- 单元格框选区域 -->
@@ -48,6 +48,7 @@
 
 <script>
 import { IEVersion } from '@/utils/util'
+import { addEventListener } from '@/utils/event'
 
 export default {
   name: 'editLayer',
@@ -106,7 +107,9 @@ export default {
         height: 18
       },
       // 内容选择图
-      cellSelectionMap: []
+      cellSelectionMap: [],
+      currentX: 0,
+      currentY: 0
     }
   },
   computed: {
@@ -188,8 +191,24 @@ export default {
     })
     // 绑定粘贴事件
     this.$refs.CellTextarea.addEventListener('paste', this.handleCellPaste)
+    addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
+    addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
   },
   methods: {
+    // 处理表格滚动
+    handleSheetScrollX (e) {
+      // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
+      // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
+      // const movementX = Math.round(-e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
+    },
+    // 处理表格滚动
+    handleSheetScrollY (e) {
+      // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
+      // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
+      // const movementY = Math.round(-e.detail.movementY * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
+    },
     // 根据单元格内容 生成选择Map
     _generateCellSelectionMap ({ ctx, textAlign, content }) {
       this.cellSelectionMap = []
