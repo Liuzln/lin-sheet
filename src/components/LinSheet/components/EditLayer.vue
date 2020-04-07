@@ -5,27 +5,27 @@
       class="edit-container"
       :style="`left: ${ currentSelect.cellX }px;
                top: ${ currentSelect.cellY }px;
-               z-index: ${ currentSelect.isEditMode ? 2 : 0 };`"
+               z-index: ${ currentSelect.isEditMode ? 2 : 1 };`"
     >
       <!-- 单元格框选区域 -->
       <canvas
         ref="editSelection"
         class="edit-selection"
-        :style="`width: ${ cellWidth * ratio }px;
-                 height: ${ cellHeight * ratio }px;
+        :style="`width: ${ cellWidth }px;
+                 height: ${ cellHeight }px;
                  z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
         @click="handleClickEditSelection"
       />
       <!-- 选择框 -->
       <div
         class="edit-border"
-        :style="`width: ${ cellWidth * ratio }px; height: ${ cellHeight * ratio }px;`"
+        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
       />
       <!-- 单元格文本内容 -->
       <canvas
         ref="editContent"
         class="edit-content"
-        :style="`width: ${ cellWidth * ratio }px; height: ${ cellHeight * ratio }px;`"
+        :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
       />
       <!-- 光标效果 -->
       <div
@@ -118,7 +118,7 @@ export default {
           width = this.columns[this.currentSelect.startColumnIndex].width - 2
         }
       }
-      return width
+      return width * this.ratio
     },
     // 单元格高度
     cellHeight: function () {
@@ -128,7 +128,7 @@ export default {
           height = this.rows[this.currentSelect.startRowIndex].height - 2
         }
       }
-      return height
+      return height * this.ratio
     },
     // 单元格数据
     cell: function () {
@@ -533,7 +533,7 @@ export default {
     resize: none;
     background: RGBA(0, 0, 0, 0);
     border: 2px solid RGB(34, 167, 242);
-    transform: translate(-1px, -2px);
+    transform: translate(-2.5px, -2.5px);
   }
 
   .edit-content {

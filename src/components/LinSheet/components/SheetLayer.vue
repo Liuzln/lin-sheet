@@ -113,7 +113,10 @@ export default {
   },
   data () {
     return {
-      sheetCanvasContext: ''
+      sheetCanvasContext: '',
+      offScreenCanvasContext: '',
+      currentX: 0,
+      currentY: 0
     }
   },
   computed: {
@@ -138,44 +141,73 @@ export default {
         width = evaluate(`${this.canvasWidth} / ${this.browserRatio}`)
       }
       return width
+    },
+    listenChange: function () {
+      const { canvasRatio, columnTotalWidth, rowTotalHeight } = this
+      return {
+        canvasRatio,
+        columnTotalWidth,
+        rowTotalHeight
+      }
     }
   },
   watch: {
-    'canvasRatio': function () {
-      this.drawSheet()
+    'listenChange': function () {
+      this.refresh()
     }
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
-    this.drawSheet()
     addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
+    addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
   },
   methods: {
+    refresh () {
+      // 绘制离屏数据
+      this.drawOffScreenCanvas()
+      // 根据离屏数据绘制表格
+      this.drawSheet()
+    },
+    // 绘制离屏表格数据
+    drawOffScreenCanvas () {
+      // 在离屏 canvas 上绘制
+      this.offscreencanvas = document.createElement('canvas')
+      // 离屏渲染的宽高是内容宽高
+      this.offscreencanvas.width = this.columnTotalWidth * this.canvasRatio
+      this.offscreencanvas.height = this.rowTotalHeight * this.canvasRatio
+      this.offScreenCanvasContext = this.offscreencanvas.getContext('2d')
+      // 绘制所需内容
+      this.drawColumnHeader(this.offScreenCanvasContext)
+      this.drawRowHeader(this.offScreenCanvasContext)
+      this.drawCell(this.offScreenCanvasContext)
+    },
     // 绘制表格
     drawSheet () {
-      this.$nextTick(() => {
-        // 清空画板
-        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
-        // 重新绘制
-        this.drawColumnHeader()
-        this.drawRowHeader()
-        this.drawCell()
-      })
+      // 清空画板
+      // clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
+      // 根据 currentX currentY 裁剪所需区域，绘制到画板上
+      this.sheetCanvasContext.drawImage(
+        this.offscreencanvas,
+        this.currentX, this.currentY, this.canvasWidth, this.canvasHeight,
+        0, 0, this.canvasWidth, this.canvasHeight
+      )
     },
     // 处理表格滚动
     handleSheetScrollX (e) {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
-      const movementX = -e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio
-      // 表格平移
-      this.sheetCanvasContext.translate(movementX, 0)
-      setTimeout(() => {
-        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
-        // 重新绘制
-        this.drawColumnHeader()
-        this.drawRowHeader()
-        this.drawCell()
-      }, 0)
+      // const movementX = Math.round(-e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio)
+      console.log('e.detail.currentX:', e.detail.currentX)
+      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.drawSheet()
+    },
+    // 处理表格滚动
+    handleSheetScrollY (e) {
+      // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
+      // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
+      // const movementY = Math.round(-e.detail.movementY * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.drawSheet()
     },
     // 渐变色
     getLinearGradient () {
@@ -186,8 +218,7 @@ export default {
       return linearGradient
     },
     // 绘制列头部
-    drawColumnHeader () {
-      const ctx = this.sheetCanvasContext
+    drawColumnHeader (ctx) {
       let lineStartX = this.columnStartWidth
       // 绘制列头左上角
       drawFillRect({
@@ -245,8 +276,7 @@ export default {
       }
     },
     // 绘制行头部
-    drawRowHeader () {
-      const ctx = this.sheetCanvasContext
+    drawRowHeader (ctx) {
       let startY = this.rowHeaderHeight
       for (let i = 0, len = this.rows.length; i < len; i++) {
         const row = this.rows[i]
@@ -291,8 +321,7 @@ export default {
       }
     },
     // 绘制单元格
-    async drawCell () {
-      const ctx = this.sheetCanvasContext
+    async drawCell (ctx) {
       let startX = this.columnStartWidth
       let startY = this.rowHeaderHeight
       for (let rowIndex = 0, len1 = this.tableData.length; rowIndex < len1; rowIndex++) {
@@ -358,6 +387,9 @@ export default {
 
 <style lang="scss">
 .sheet-canvas {
+  position: relative;
+  top: 0;
+  left: 0;
   overflow: hidden;
 }
 </style>

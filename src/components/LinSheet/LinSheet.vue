@@ -1,17 +1,5 @@
 <template>
   <div id="lin-sheet">
-    <!-- 水平滚动条 -->
-    <horizontal-scroll-bar
-      :canvasRatio="canvasRatio"
-      :columnStartWidth="columnStartWidth"
-      :columnTotalWidth="columnTotalWidth"
-      :windowWidth="sheetWidth"
-      :ratio="ratio"
-    />
-    <!-- 垂直滚动条 -->
-    <!-- <vertical-scroll-bar
-      :height="sheetHeight"
-    /> -->
     <!-- 修改层 -->
     <edit-layer
       :ratio="ratio"
@@ -31,11 +19,27 @@
       class="edit-layer"
       @click="handleClickSheet"
     />
+    <!-- 水平滚动条 -->
+    <horizontal-scroll-bar
+      :canvasRatio="canvasRatio"
+      :columnStartWidth="columnStartWidth"
+      :columnTotalWidth="columnTotalWidth"
+      :windowWidth="width"
+      :ratio="ratio"
+    />
+    <!-- 垂直滚动条 -->
+    <vertical-scroll-bar
+      :canvasRatio="canvasRatio"
+      :rowHeaderHeight="rowHeaderHeight"
+      :rowTotalHeight="rowTotalHeight"
+      :windowHeight="height"
+      :ratio="ratio"
+    />
     <!-- 单元格绘制 -->
     <sheet-layer
       ref="sheetLayer"
-      :width="sheetWidth"
-      :height="sheetHeight"
+      :width="width"
+      :height="height"
       :columnTotalWidth="columnTotalWidth"
       :rowTotalHeight="rowTotalHeight"
       :browserRatio="browserRatio"
@@ -67,15 +71,15 @@ import { addEventListener } from '@/utils/event'
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
 import HorizontalScrollBar from './components/HorizontalScrollBar.vue'
-// import VerticalScrollBar from './components/VerticalScrollBar.vue'
+import VerticalScrollBar from './components/VerticalScrollBar.vue'
 
 export default {
   name: 'LinSheet',
   components: {
     SheetLayer,
     EditLayer,
-    HorizontalScrollBar
-    // VerticalScrollBar
+    HorizontalScrollBar,
+    VerticalScrollBar
   },
   props: {
     // 当前选择的表格Key 用于多个表格时判断目前点击哪个表格
@@ -156,8 +160,6 @@ export default {
   data () {
     return {
       canvasRatio: 0,
-      sheetWidth: this.width, // 表格宽度
-      sheetHeight: this.height, // 表格高度
       // 当前选择
       currentSelect: {
         startColumnIndex: 1, // 列开始索引 单选时用的坐标
@@ -178,8 +180,10 @@ export default {
       return window.devicePixelRatio || 1
     },
     table: function () {
-      const { rows, columns, tableData } = this
+      const { width, height, rows, columns, tableData } = this
       return {
+        width,
+        height,
         rows,
         columns,
         tableData
@@ -229,7 +233,7 @@ export default {
       }
     },
     'table': function () {
-      this.$refs.sheetLayer.drawSheet()
+      this.$refs.sheetLayer.refresh()
     },
     'ratio': function (newValue, oldValue) {
       this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
@@ -293,7 +297,7 @@ export default {
     // 处理窗口大小变化
     handleWindowResizeChange () {
       console.log('handleWindowResizeChange')
-      this.$refs.sheetLayer.drawSheet()
+      this.$refs.sheetLayer.refresh()
     },
     // 处理点击表格
     handleClickSheet (e) {
@@ -380,14 +384,14 @@ export default {
           }
         }
       }
-      this.$refs.sheetLayer.drawSheet()
+      this.$refs.sheetLayer.refresh()
     },
     // 处理删除表格数据
     handleDeleteTableData ({ columnIndex, rowIndex }) {
       console.log(columnIndex)
       console.log(rowIndex)
       this.tableData[rowIndex - 1][columnIndex - 1].content = this.tableData[rowIndex - 1][columnIndex - 1].content.substr(0, this.tableData[rowIndex - 1][columnIndex - 1].content.length - 1)
-      this.$refs.sheetLayer.drawSheet()
+      this.$refs.sheetLayer.refresh()
     }
   }
 }

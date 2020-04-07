@@ -55,9 +55,9 @@ export default {
     // 可视宽度 / 缩放比例 / 内容宽度
     thumbWidth: function () {
       // 可视宽度
-      const visibleWidth = this.windowWidth
+      const visibleWidth = this.windowWidth - 16
       // 滚动条宽度
-      const scrollWidth = this.windowWidth - 32 - (this.columnStartWidth * this.ratio)
+      const scrollWidth = this.windowWidth - 32 - (this.columnStartWidth * this.ratio) - 16
       // 可视内容宽度 与 内容宽度的比例
       const widthRatio = visibleWidth / this.ratio / this.columnTotalWidth
       return scrollWidth * widthRatio
@@ -75,8 +75,8 @@ export default {
     })
     addEventListener(window, 'mousemove', (e) => {
       e.preventDefault()
-      const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio)
-      const visibleWidth = this.windowWidth
+      const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
+      const visibleWidth = this.windowWidth - 16
       if (this.lock === false) {
         // 判断滚动条是否在最左边和最右边
         if (this.currentX <= 0 && e.movementX < 0) {
@@ -95,7 +95,7 @@ export default {
         window.dispatchEvent(new CustomEvent('changeOffsetX', {
           bubbles: true,
           detail: {
-            currtneX: this.currentX,
+            currentX: this.currentX,
             movementX: movementX,
             sheetMoveRatio: (this.columnTotalWidth - (visibleWidth / this.ratio)) / canOffsetValue
           }
@@ -117,10 +117,10 @@ export default {
 #horizontal-scroll-bar {
   z-index: 2;
   position: absolute;
-  right: 0;
+  right: 16px;
   bottom: 0;
   border-top: 1px solid #e2e6ed;
-  height: 20px;
+  height: 16px;
   background: #f2f4f7;
 
   .prev-btn {
