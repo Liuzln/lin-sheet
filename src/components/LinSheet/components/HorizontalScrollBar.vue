@@ -51,14 +51,16 @@ export default {
     }
   },
   computed: {
-    // 窗口宽度和内容宽度的比例
-    // 可视宽度 / 内容宽度 =
+    // 键宽度
+    // 可视宽度 / 缩放比例 / 内容宽度
     thumbWidth: function () {
+      // 可视宽度
+      const visibleWidth = this.windowWidth
       // 滚动条宽度
-      const scrollWidth = this.windowWidth - 32
+      const scrollWidth = this.windowWidth - 32 - (this.columnStartWidth * this.ratio)
       // 可视内容宽度 与 内容宽度的比例
-      const ratio = ((this.windowWidth / this.ratio) / this.columnTotalWidth)
-      return scrollWidth * ratio
+      const widthRatio = visibleWidth / this.ratio / this.columnTotalWidth
+      return scrollWidth * widthRatio
     }
   },
   mounted () {
@@ -73,7 +75,8 @@ export default {
     })
     addEventListener(window, 'mousemove', (e) => {
       e.preventDefault()
-      const canOffsetValue = this.windowWidth - 32 - this.thumbWidth
+      const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio)
+      const visibleWidth = this.windowWidth
       if (this.lock === false) {
         // 判断滚动条是否在最左边和最右边
         if (this.currentX <= 0 && e.movementX < 0) {
@@ -94,7 +97,7 @@ export default {
           detail: {
             currtneX: this.currentX,
             movementX: movementX,
-            sheetMoveRatio: (this.columnTotalWidth - (this.windowWidth / this.ratio)) / canOffsetValue
+            sheetMoveRatio: (this.columnTotalWidth - (visibleWidth / this.ratio)) / canOffsetValue
           }
         }))
         // 内容宽度 - 可视区域(已减去左偏移) = 需偏移空间量
