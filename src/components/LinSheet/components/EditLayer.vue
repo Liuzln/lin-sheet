@@ -200,14 +200,14 @@ export default {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
       // const movementX = Math.round(-e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.currentX = Math.round(e.detail.currentX * this.ratio * e.detail.sheetMoveRatio)
     },
     // 处理表格滚动
     handleSheetScrollY (e) {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
       // const movementY = Math.round(-e.detail.movementY * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
+      this.currentY = Math.round(e.detail.currentY * this.ratio * e.detail.sheetMoveRatio)
     },
     // 根据单元格内容 生成选择Map
     _generateCellSelectionMap ({ ctx, textAlign, content }) {

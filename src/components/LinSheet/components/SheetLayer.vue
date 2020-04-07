@@ -114,6 +114,7 @@ export default {
   data () {
     return {
       sheetCanvasContext: '',
+      offScreenCanvas: '',
       offScreenCanvasContext: '',
       currentX: 0,
       currentY: 0
@@ -153,7 +154,7 @@ export default {
   },
   watch: {
     'listenChange': function () {
-      this.refresh()
+      this.refresh(true)
     }
   },
   mounted () {
@@ -162,35 +163,41 @@ export default {
     addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
   },
   methods: {
-    refresh () {
+    refresh (force) {
       // 绘制离屏数据
-      this.drawOffScreenCanvas()
+      this.drawOffScreenCanvas(force)
       // 根据离屏数据绘制表格
       this.drawSheet()
     },
     // 绘制离屏表格数据
-    drawOffScreenCanvas () {
+    drawOffScreenCanvas (force) {
       // 在离屏 canvas 上绘制
-      this.offscreencanvas = document.createElement('canvas')
-      // 离屏渲染的宽高是内容宽高
-      this.offscreencanvas.width = this.columnTotalWidth * this.canvasRatio
-      this.offscreencanvas.height = this.rowTotalHeight * this.canvasRatio
-      this.offScreenCanvasContext = this.offscreencanvas.getContext('2d')
-      // 绘制所需内容
-      this.drawColumnHeader(this.offScreenCanvasContext)
-      this.drawRowHeader(this.offScreenCanvasContext)
-      this.drawCell(this.offScreenCanvasContext)
+      if ((!this.offScreenCanvas && this.columnTotalWidth > this.columnStartWidth && this.rowTotalHeight > this.rowHeaderHeight) || force) {
+        this.offScreenCanvas = document.createElement('canvas')
+        // 离屏渲染的宽高是内容宽高
+        this.offScreenCanvas.width = this.columnTotalWidth * this.canvasRatio
+        this.offScreenCanvas.height = this.rowTotalHeight * this.canvasRatio
+        this.offScreenCanvasContext = this.offScreenCanvas.getContext('2d')
+        // 绘制所需内容
+        this.drawColumnHeader(this.offScreenCanvasContext)
+        this.drawRowHeader(this.offScreenCanvasContext)
+        this.drawCell(this.offScreenCanvasContext)
+      }
     },
     // 绘制表格
     drawSheet () {
       // 清空画板
       // clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
       // 根据 currentX currentY 裁剪所需区域，绘制到画板上
-      this.sheetCanvasContext.drawImage(
-        this.offscreencanvas,
-        this.currentX, this.currentY, this.canvasWidth, this.canvasHeight,
-        0, 0, this.canvasWidth, this.canvasHeight
-      )
+      if (this.offScreenCanvas) {
+        setTimeout(() => {
+          this.sheetCanvasContext.drawImage(
+            this.offScreenCanvas,
+            this.currentX, this.currentY, this.canvasWidth, this.canvasHeight,
+            0, 0, this.canvasWidth, this.canvasHeight
+          )
+        }, 0)
+      }
     },
     // 处理表格滚动
     handleSheetScrollX (e) {

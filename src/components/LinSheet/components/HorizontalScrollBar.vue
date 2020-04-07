@@ -114,7 +114,7 @@ export default {
     })
     // shift + 鼠标滚轮 滚动
     addEventListener(window, 'mousewheel', (e) => {
-      if (e.shiftKey && this.isSelectCurrentSheet) {
+      if (e.shiftKey && this.isSelectCurrentSheet && !e.ctrlKey) {
         const stepWidth = -25 * e.delta
         const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
         const visibleWidth = this.windowWidth - 16

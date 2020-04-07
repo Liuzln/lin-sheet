@@ -57,10 +57,6 @@ export default {
       this.rows = res.data.rows
       this.columns = res.data.columns
       this.tableData = res.data.tableData
-    },
-    handleClickSheet ({ x, y }) {
-      console.log(x)
-      console.log(y)
     }
   }
 }

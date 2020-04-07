@@ -25,7 +25,7 @@
       :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
       :columnTotalWidth="columnTotalWidth"
-      :windowWidth="width"
+      :windowWidth="sheetWidth"
       :ratio="ratio"
     />
     <!-- 垂直滚动条 -->
@@ -34,14 +34,14 @@
       :canvasRatio="canvasRatio"
       :rowHeaderHeight="rowHeaderHeight"
       :rowTotalHeight="rowTotalHeight"
-      :windowHeight="height"
+      :windowHeight="sheetHeight"
       :ratio="ratio"
     />
     <!-- 单元格绘制 -->
     <sheet-layer
       ref="sheetLayer"
-      :width="width"
-      :height="height"
+      :width="sheetWidth"
+      :height="sheetHeight"
       :columnTotalWidth="columnTotalWidth"
       :rowTotalHeight="rowTotalHeight"
       :browserRatio="browserRatio"
@@ -65,7 +65,7 @@
 <script>
 // TODO: 根据坐标改变光标
 // TODO: 根据点击位置选择单元格、列、行
-// import debounce from 'lodash.debounce'
+import debounce from 'lodash.debounce'
 import uuidv1 from 'uuid/v1'
 import { evaluate } from '@/utils/math'
 import { addEventListener } from '@/utils/event'
@@ -160,6 +160,7 @@ export default {
     }
   },
   data () {
+    this.handleTableDataChange = debounce(this.handleTableDataChange, 300)
     return {
       canvasRatio: 0,
       // 当前选择
@@ -175,7 +176,9 @@ export default {
         clickY: 0 // 鼠标点击位置
       },
       currentX: 0,
-      currentY: 0
+      currentY: 0,
+      sheetWidth: 0,
+      sheetHeight: 0
     }
   },
   computed: {
@@ -241,16 +244,17 @@ export default {
       }
     },
     'table': function () {
-      this.$refs.sheetLayer.refresh()
+      this.handleTableDataChange()
     },
     'ratio': function (newValue, oldValue) {
       this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
       this.currentSelect.cellY = this.currentSelect.cellY / oldValue * newValue
+      this.currentX = this.currentX
+      this.currentY = this.currentY
     }
   },
   mounted () {
     this.canvasRatio = window.devicePixelRatio || 1
-    window.addEventListener('resize', this.handleWindowResizeChange)
     // 判断是否监听缩放事件
     if (this.isBindZoomEventListener) {
       // Ctrl+鼠标滚轮缩放
@@ -313,8 +317,9 @@ export default {
       this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
     },
     // 处理窗口大小变化
-    handleWindowResizeChange () {
-      console.log('handleWindowResizeChange')
+    handleTableDataChange () {
+      this.sheetWidth = this.width
+      this.sheetHeight = this.height
       this.$refs.sheetLayer.refresh()
     },
     // 处理点击表格

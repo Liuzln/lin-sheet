@@ -112,7 +112,7 @@ export default {
     })
     // Ctrl+鼠标滚轮缩放
     addEventListener(window, 'mousewheel', (e) => {
-      if (!e.shiftKey && this.isSelectCurrentSheet) {
+      if (!e.shiftKey && this.isSelectCurrentSheet && !e.ctrlKey) {
         console.log(e.delta)
         const stepHeight = -25 * e.delta
         const canOffsetValue = this.windowHeight - 32 - this.thumbHeight - (this.rowHeaderHeight * this.ratio) - 16
