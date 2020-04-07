@@ -125,10 +125,11 @@ export default {
           return
         }
         // 移动量
+        console.log('stepWidth:', stepWidth)
         let movementX = (stepWidth / this.canvasRatio) * this.ratio
-        if (this.currentX + stepWidth < 0) {
+        if (this.currentX + movementX < 0) {
           movementX = this.currentX
-        } else if (this.currentX + stepWidth > canOffsetValue) {
+        } else if (this.currentX + movementX > canOffsetValue) {
           movementX = canOffsetValue - this.currentX
         }
         this.currentX += movementX
