@@ -20,6 +20,11 @@ export default {
   components: {
   },
   props: {
+    // 是否是选择当前表格
+    isSelectCurrentSheet: {
+      type: Boolean,
+      required: true
+    },
     // 行开始高度
     rowHeaderHeight: {
       type: Number,
@@ -104,6 +109,37 @@ export default {
     })
     addEventListener(window, 'mouseup', (e) => {
       this.lock = true
+    })
+    // Ctrl+鼠标滚轮缩放
+    addEventListener(window, 'mousewheel', (e) => {
+      if (!e.shiftKey && this.isSelectCurrentSheet) {
+        console.log(e.delta)
+        const stepHeight = -25 * e.delta
+        const canOffsetValue = this.windowHeight - 32 - this.thumbHeight - (this.rowHeaderHeight * this.ratio) - 16
+        const visibleHeight = this.windowHeight - 16
+        // 判断滚动条是否在最上面和最下面
+        if (this.currentY <= 0 && stepHeight < 0) {
+          return
+        } else if (this.currentY >= canOffsetValue && stepHeight > 0) {
+          return
+        }
+        // 移动量
+        let movementY = (stepHeight / this.canvasRatio) * this.ratio
+        if (this.currentY + stepHeight < 0) {
+          movementY = -this.currentY
+        } else if (this.currentY + stepHeight > canOffsetValue) {
+          movementY = canOffsetValue - this.currentY
+        }
+        this.currentY += movementY
+        window.dispatchEvent(new CustomEvent('changeOffsetY', {
+          bubbles: true,
+          detail: {
+            currentY: this.currentY,
+            movementY: movementY,
+            sheetMoveRatio: (this.rowTotalHeight - (visibleHeight / this.ratio)) / canOffsetValue
+          }
+        }))
+      }
     })
   },
   methods: {

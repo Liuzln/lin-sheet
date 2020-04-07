@@ -11,7 +11,7 @@
 <script>
 import { evaluate } from '@/utils/math'
 import {
-  clearContext, drawVerticalLine, drawHorizontalLine,
+  drawVerticalLine, drawHorizontalLine,
   drawFillRect, drawText
 } from '@/utils/canvas'
 import { getColumnsName } from '@/utils/sheet'
@@ -197,7 +197,6 @@ export default {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
       // const movementX = Math.round(-e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio)
-      console.log('e.detail.currentX:', e.detail.currentX)
       this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
       this.drawSheet()
     },

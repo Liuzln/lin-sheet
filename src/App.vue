@@ -1,6 +1,8 @@
 <template>
   <div id="app">
     <lin-sheet
+      :currentSelectTableKey="'1'"
+      :tableKey="'1'"
       :rows="rows"
       :columns="columns"
       :tableData="tableData"

@@ -20,6 +20,11 @@ export default {
   components: {
   },
   props: {
+    // 是否是选择当前表格
+    isSelectCurrentSheet: {
+      type: Boolean,
+      required: true
+    },
     // 列开始宽度
     columnStartWidth: {
       type: Number,
@@ -106,6 +111,36 @@ export default {
     })
     addEventListener(window, 'mouseup', (e) => {
       this.lock = true
+    })
+    // shift + 鼠标滚轮 滚动
+    addEventListener(window, 'mousewheel', (e) => {
+      if (e.shiftKey && this.isSelectCurrentSheet) {
+        const stepWidth = -25 * e.delta
+        const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
+        const visibleWidth = this.windowWidth - 16
+        // 判断滚动条是否在最上面和最下面
+        if (this.currentX <= 0 && stepWidth < 0) {
+          return
+        } else if (this.currentX >= canOffsetValue && stepWidth > 0) {
+          return
+        }
+        // 移动量
+        let movementX = (stepWidth / this.canvasRatio) * this.ratio
+        if (this.currentX + stepWidth < 0) {
+          movementX = this.currentX
+        } else if (this.currentX + stepWidth > canOffsetValue) {
+          movementX = canOffsetValue - this.currentX
+        }
+        this.currentX += movementX
+        window.dispatchEvent(new CustomEvent('changeOffsetX', {
+          bubbles: true,
+          detail: {
+            currentX: this.currentX,
+            movementX: movementX,
+            sheetMoveRatio: (this.columnTotalWidth - (visibleWidth / this.ratio)) / canOffsetValue
+          }
+        }))
+      }
     })
   },
   methods: {

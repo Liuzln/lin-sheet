@@ -21,6 +21,7 @@
     />
     <!-- 水平滚动条 -->
     <horizontal-scroll-bar
+      :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
       :columnTotalWidth="columnTotalWidth"
@@ -29,6 +30,7 @@
     />
     <!-- 垂直滚动条 -->
     <vertical-scroll-bar
+      :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :rowHeaderHeight="rowHeaderHeight"
       :rowTotalHeight="rowTotalHeight"
@@ -213,6 +215,10 @@ export default {
         totalHeight += row.height
       }
       return totalHeight
+    },
+    // 是否是选择当前表格
+    isSelectCurrentSheet: function () {
+      return this.currentSelectTableKey === this.tableKey
     }
   },
   watch: {
