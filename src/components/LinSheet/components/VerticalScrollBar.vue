@@ -90,6 +90,7 @@ export default {
           return
         }
         // 鼠标移动量
+        // TODO: firefox浏览器在高DPI的情况下会不正常
         let movementY = (e.movementY / this.canvasRatio) * this.ratio
         if (this.scrollY + movementY < 0) {
           movementY = -this.scrollY

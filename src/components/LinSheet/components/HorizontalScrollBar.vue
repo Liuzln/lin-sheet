@@ -90,6 +90,7 @@ export default {
           return
         }
         // 鼠标移动量
+        // TODO: firefox浏览器在高DPI的情况下会不正常
         let movementX = (e.movementX / this.canvasRatio) * this.ratio
         if (this.scrollX + movementX < 0) {
           movementX = -this.scrollX
@@ -112,7 +113,7 @@ export default {
     addEventListener(window, 'mouseup', (e) => {
       this.lock = true
     })
-    // shift + 鼠标滚轮 滚动
+    // 滚动
     addEventListener(window, 'mousewheel', (e) => {
       if (e.shiftKey && this.isSelectCurrentSheet && !e.ctrlKey) {
         const stepWidth = -25 * e.delta
