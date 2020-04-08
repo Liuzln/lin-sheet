@@ -6,7 +6,7 @@
   >
     <div class="prev-btn"></div>
     <div class="scroll">
-      <div class="thumb" :style="`height: ${ thumbHeight }px; margin-top: ${ currentY }px;`"></div>
+      <div class="thumb" :style="`height: ${ thumbHeight }px; margin-top: ${ scrollY }px;`"></div>
     </div>
     <div class="next-btn"></div>
   </div>
@@ -52,7 +52,7 @@ export default {
   data () {
     return {
       lock: true,
-      currentY: 0
+      scrollY: 0
     }
   },
   computed: {
@@ -84,23 +84,23 @@ export default {
       const visibleHeight = this.windowHeight - 16
       if (this.lock === false) {
         // 判断滚动条是否在最左边和最右边
-        if (this.currentY <= 0 && e.movementY < 0) {
+        if (this.scrollY <= 0 && e.movementY < 0) {
           return
-        } else if (this.currentY >= canOffsetValue && e.movementY > 0) {
+        } else if (this.scrollY >= canOffsetValue && e.movementY > 0) {
           return
         }
         // 鼠标移动量
         let movementY = (e.movementY / this.canvasRatio) * this.ratio
-        if (this.currentY + movementY < 0) {
-          movementY = -this.currentY
-        } else if (this.currentY + movementY > canOffsetValue) {
-          movementY = canOffsetValue - this.currentY
+        if (this.scrollY + movementY < 0) {
+          movementY = -this.scrollY
+        } else if (this.scrollY + movementY > canOffsetValue) {
+          movementY = canOffsetValue - this.scrollY
         }
-        this.currentY += movementY
-        window.dispatchEvent(new CustomEvent('changeOffsetY', {
+        this.scrollY += movementY
+        window.dispatchEvent(new CustomEvent('updateScrollY', {
           bubbles: true,
           detail: {
-            currentY: this.currentY,
+            scrollY: this.scrollY,
             movementY: movementY,
             sheetMoveRatio: (this.rowTotalHeight - (visibleHeight / this.ratio)) / canOffsetValue
           }
@@ -118,23 +118,23 @@ export default {
         const canOffsetValue = this.windowHeight - 32 - this.thumbHeight - (this.rowHeaderHeight * this.ratio) - 16
         const visibleHeight = this.windowHeight - 16
         // 判断滚动条是否在最上面和最下面
-        if (this.currentY <= 0 && stepHeight < 0) {
+        if (this.scrollY <= 0 && stepHeight < 0) {
           return
-        } else if (this.currentY >= canOffsetValue && stepHeight > 0) {
+        } else if (this.scrollY >= canOffsetValue && stepHeight > 0) {
           return
         }
         // 移动量
         let movementY = (stepHeight / this.canvasRatio) * this.ratio
-        if (this.currentY + stepHeight < 0) {
-          movementY = -this.currentY
-        } else if (this.currentY + stepHeight > canOffsetValue) {
-          movementY = canOffsetValue - this.currentY
+        if (this.scrollY + stepHeight < 0) {
+          movementY = -this.scrollY
+        } else if (this.scrollY + stepHeight > canOffsetValue) {
+          movementY = canOffsetValue - this.scrollY
         }
-        this.currentY += movementY
-        window.dispatchEvent(new CustomEvent('changeOffsetY', {
+        this.scrollY += movementY
+        window.dispatchEvent(new CustomEvent('updateScrollY', {
           bubbles: true,
           detail: {
-            currentY: this.currentY,
+            scrollY: this.scrollY,
             movementY: movementY,
             sheetMoveRatio: (this.rowTotalHeight - (visibleHeight / this.ratio)) / canOffsetValue
           }

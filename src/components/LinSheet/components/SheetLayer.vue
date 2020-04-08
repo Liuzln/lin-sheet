@@ -20,6 +20,11 @@ import { addEventListener } from '@/utils/event'
 export default {
   name: 'sheetLayer',
   props: {
+    // 是否是选择当前表格
+    isSelectCurrentSheet: {
+      type: Boolean,
+      required: true
+    },
     width: {
       type: Number,
       required: true
@@ -116,8 +121,8 @@ export default {
       sheetCanvasContext: '',
       offScreenCanvas: '',
       offScreenCanvasContext: '',
-      currentX: 0,
-      currentY: 0
+      scrollX: 0,
+      scrollY: 0
     }
   },
   computed: {
@@ -159,8 +164,8 @@ export default {
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
-    addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
-    addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
+    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
     refresh (force) {
@@ -188,12 +193,12 @@ export default {
     drawSheet () {
       // 清空画板
       // clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
-      // 根据 currentX currentY 裁剪所需区域，绘制到画板上
+      // 根据 scrollX scrollY 裁剪所需区域，绘制到画板上
       if (this.offScreenCanvas) {
         setTimeout(() => {
           this.sheetCanvasContext.drawImage(
             this.offScreenCanvas,
-            this.currentX, this.currentY, this.canvasWidth, this.canvasHeight,
+            this.scrollX, this.scrollY, this.canvasWidth, this.canvasHeight,
             0, 0, this.canvasWidth, this.canvasHeight
           )
         }, 0)
@@ -204,16 +209,20 @@ export default {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
       // const movementX = Math.round(-e.detail.movementX * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.drawSheet()
+      if (this.isSelectCurrentSheet) {
+        this.scrollX = Math.round(e.detail.scrollX * this.canvasRatio * e.detail.sheetMoveRatio)
+        this.drawSheet()
+      }
     },
     // 处理表格滚动
     handleSheetScrollY (e) {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
       // 表格偏移量 = 鼠标偏移量 * 表格缩放比例 * 内容宽度与可视宽度的比例
       // const movementY = Math.round(-e.detail.movementY * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
-      this.drawSheet()
+      if (this.isSelectCurrentSheet) {
+        this.scrollY = Math.round(e.detail.scrollY * this.canvasRatio * e.detail.sheetMoveRatio)
+        this.drawSheet()
+      }
     },
     // 渐变色
     getLinearGradient () {

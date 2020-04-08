@@ -6,7 +6,7 @@
   >
     <div class="prev-btn"></div>
     <div class="scroll">
-      <div class="thumb" :style="`width: ${ thumbWidth }px; margin-left: ${ currentX }px;`"></div>
+      <div class="thumb" :style="`width: ${ thumbWidth }px; margin-left: ${ scrollX }px;`"></div>
     </div>
     <div class="next-btn"></div>
   </div>
@@ -52,7 +52,7 @@ export default {
   data () {
     return {
       lock: true,
-      currentX: 0
+      scrollX: 0
     }
   },
   computed: {
@@ -84,23 +84,23 @@ export default {
       const visibleWidth = this.windowWidth - 16
       if (this.lock === false) {
         // 判断滚动条是否在最左边和最右边
-        if (this.currentX <= 0 && e.movementX < 0) {
+        if (this.scrollX <= 0 && e.movementX < 0) {
           return
-        } else if (this.currentX >= canOffsetValue && e.movementX > 0) {
+        } else if (this.scrollX >= canOffsetValue && e.movementX > 0) {
           return
         }
         // 鼠标移动量
         let movementX = (e.movementX / this.canvasRatio) * this.ratio
-        if (this.currentX + movementX < 0) {
-          movementX = -this.currentX
-        } else if (this.currentX + movementX > canOffsetValue) {
-          movementX = canOffsetValue - this.currentX
+        if (this.scrollX + movementX < 0) {
+          movementX = -this.scrollX
+        } else if (this.scrollX + movementX > canOffsetValue) {
+          movementX = canOffsetValue - this.scrollX
         }
-        this.currentX += movementX
-        window.dispatchEvent(new CustomEvent('changeOffsetX', {
+        this.scrollX += movementX
+        window.dispatchEvent(new CustomEvent('updateScrollX', {
           bubbles: true,
           detail: {
-            currentX: this.currentX,
+            scrollX: this.scrollX,
             movementX: movementX,
             sheetMoveRatio: (this.columnTotalWidth - (visibleWidth / this.ratio)) / canOffsetValue
           }
@@ -119,24 +119,24 @@ export default {
         const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
         const visibleWidth = this.windowWidth - 16
         // 判断滚动条是否在最上面和最下面
-        if (this.currentX <= 0 && stepWidth < 0) {
+        if (this.scrollX <= 0 && stepWidth < 0) {
           return
-        } else if (this.currentX >= canOffsetValue && stepWidth > 0) {
+        } else if (this.scrollX >= canOffsetValue && stepWidth > 0) {
           return
         }
         // 移动量
         console.log('stepWidth:', stepWidth)
         let movementX = (stepWidth / this.canvasRatio) * this.ratio
-        if (this.currentX + movementX < 0) {
-          movementX = this.currentX
-        } else if (this.currentX + movementX > canOffsetValue) {
-          movementX = canOffsetValue - this.currentX
+        if (this.scrollX + movementX < 0) {
+          movementX = this.scrollX
+        } else if (this.scrollX + movementX > canOffsetValue) {
+          movementX = canOffsetValue - this.scrollX
         }
-        this.currentX += movementX
-        window.dispatchEvent(new CustomEvent('changeOffsetX', {
+        this.scrollX += movementX
+        window.dispatchEvent(new CustomEvent('updateScrollX', {
           bubbles: true,
           detail: {
-            currentX: this.currentX,
+            scrollX: this.scrollX,
             movementX: movementX,
             sheetMoveRatio: (this.columnTotalWidth - (visibleWidth / this.ratio)) / canOffsetValue
           }

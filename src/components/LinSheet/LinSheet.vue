@@ -3,6 +3,7 @@
     <!-- 修改层 -->
     <edit-layer
       ref="EditLayer"
+      :isSelectCurrentSheet="isSelectCurrentSheet"
       :ratio="ratio"
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
@@ -41,6 +42,7 @@
     <!-- 单元格绘制 -->
     <sheet-layer
       ref="sheetLayer"
+      :isSelectCurrentSheet="isSelectCurrentSheet"
       :width="sheetWidth"
       :height="sheetHeight"
       :columnTotalWidth="columnTotalWidth"
@@ -176,10 +178,10 @@ export default {
         clickX: 0, // 鼠标点击位置
         clickY: 0 // 鼠标点击位置
       },
-      currentX: 0,
-      currentY: 0,
-      sheetWidth: 0,
-      sheetHeight: 0
+      scrollX: 0,
+      scrollY: 0,
+      sheetWidth: this.width,
+      sheetHeight: this.height
     }
   },
   computed: {
@@ -250,8 +252,6 @@ export default {
     'ratio': function (newValue, oldValue) {
       this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
       this.currentSelect.cellY = this.currentSelect.cellY / oldValue * newValue
-      this.currentX = this.currentX
-      this.currentY = this.currentY
     }
   },
   mounted () {
@@ -392,17 +392,21 @@ export default {
         }
       }, { passive: false })
     }
-    addEventListener(window, 'changeOffsetX', this.handleSheetScrollX)
-    addEventListener(window, 'changeOffsetY', this.handleSheetScrollY)
+    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
     // 处理表格滚动
     handleSheetScrollX (e) {
-      this.currentX = Math.round(e.detail.currentX * this.canvasRatio * e.detail.sheetMoveRatio)
+      if (this.isSelectCurrentSheet) {
+        this.scrollX = Math.round(e.detail.scrollX * this.canvasRatio * e.detail.sheetMoveRatio)
+      }
     },
     // 处理表格滚动
     handleSheetScrollY (e) {
-      this.currentY = Math.round(e.detail.currentY * this.canvasRatio * e.detail.sheetMoveRatio)
+      if (this.isSelectCurrentSheet) {
+        this.scrollY = Math.round(e.detail.scrollY * this.canvasRatio * e.detail.sheetMoveRatio)
+      }
     },
     // 处理窗口大小变化
     handleTableDataChange () {
@@ -414,8 +418,8 @@ export default {
     handleClickSheet (e) {
       // console.log(event)
       // 鼠标点击位置
-      this.currentSelect.clickX = e.offsetX + (this.currentX / this.canvasRatio)
-      this.currentSelect.clickY = e.offsetY + (this.currentY / this.canvasRatio)
+      this.currentSelect.clickX = e.offsetX + (this.scrollX / this.canvasRatio)
+      this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
       let currentX = 0
       let columnIndex = 0
       let isRepeatClickColumn = false
