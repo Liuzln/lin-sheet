@@ -1,6 +1,8 @@
 # lin-sheet
 基于 canvas 的表格编辑器。
 
+![image](https://raw.githubusercontent.com/Liuzln/lin-sheet/master/gif/GIF%202020-4-8%2012-52-36.gif)   
+
 ## :white_check_mark: TODO
 - [x] 渲染表格和内容
   - [x] 列名称默认为英文字母递增
