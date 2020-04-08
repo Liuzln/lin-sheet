@@ -345,51 +345,67 @@ export default {
         for (let cloumnIndex = 0, len2 = row.length; cloumnIndex < len2; cloumnIndex++) {
           const cell = row[cloumnIndex]
           const columnWidth = this.columns[cloumnIndex].width
-          drawFillRect({
-            ctx: ctx,
-            startX: startX * this.canvasRatio,
-            startY: startY * this.canvasRatio,
-            width: columnWidth * this.canvasRatio,
-            height: rowHeight * this.canvasRatio,
-            color: 'RGB(255, 255, 255)'
-          })
-          drawVerticalLine({
-            ctx: ctx,
-            startX: (startX + columnWidth) * this.canvasRatio,
-            startY: startY * this.canvasRatio,
-            length: rowHeight * this.canvasRatio,
-            color: 'RGB(215, 218, 222)'
-          })
-          drawHorizontalLine({
-            ctx: ctx,
-            startX: startX * this.canvasRatio,
-            startY: (startY + rowHeight) * this.canvasRatio,
-            length: columnWidth * this.canvasRatio,
-            color: 'RGB(215, 218, 222)'
-          })
-          // 默认左对齐
-          let textX = startX * this.canvasRatio
-          if (cell.format.textAlign === 'start' || cell.format.textAlign === 'left') {
-            // 左对齐 将文字X轴坐标放到单元格左边
-            textX = (startX + 6) * this.canvasRatio
-          } else if (cell.format.textAlign === 'center') {
-            // 水平居中 将文字X轴坐标放到单元格中间
-            textX = (startX + (columnWidth / 2)) * this.canvasRatio
-          } else if (cell.format.textAlign === 'end' || cell.format.textAlign === 'right') {
-            // 右对齐 将文字X轴坐标放到单元格右边
-            textX = (startX + columnWidth - 6) * this.canvasRatio
+          // 判断此单元格是否需要已被合并
+          if (cell.attr.columnSpan > 0 && cell.attr.rowSpan > 0) {
+            // 获取绘制宽度
+            let drawWidth = 0
+            for (let i = 0; i < cell.attr.columnSpan; i++) {
+              drawWidth += this.columns[cloumnIndex + i].width
+            }
+            // 绘制高度
+            let drawHeight = 0
+            for (let i = 0; i < cell.attr.rowSpan; i++) {
+              drawHeight += this.rows[rowIndex + i].height
+            }
+            // 绘制背景颜色
+            drawFillRect({
+              ctx: ctx,
+              startX: startX * this.canvasRatio,
+              startY: startY * this.canvasRatio,
+              width: drawWidth * this.canvasRatio,
+              height: drawHeight * this.canvasRatio,
+              color: 'RGB(255, 255, 255)'
+            })
+            // 绘制右边框
+            drawVerticalLine({
+              ctx: ctx,
+              startX: (startX + drawWidth) * this.canvasRatio,
+              startY: startY * this.canvasRatio,
+              length: drawHeight * this.canvasRatio,
+              color: 'RGB(215, 218, 222)'
+            })
+            // 绘制下边框
+            drawHorizontalLine({
+              ctx: ctx,
+              startX: startX * this.canvasRatio,
+              startY: (startY + drawHeight) * this.canvasRatio,
+              length: drawWidth * this.canvasRatio,
+              color: 'RGB(215, 218, 222)'
+            })
+            // 默认左对齐
+            let textX = startX * this.canvasRatio
+            if (cell.format.textAlign === 'start' || cell.format.textAlign === 'left') {
+              // 左对齐 将文字X轴坐标放到单元格左边
+              textX = (startX + 6) * this.canvasRatio
+            } else if (cell.format.textAlign === 'center') {
+              // 水平居中 将文字X轴坐标放到单元格中间
+              textX = (startX + (drawWidth / 2)) * this.canvasRatio
+            } else if (cell.format.textAlign === 'end' || cell.format.textAlign === 'right') {
+              // 右对齐 将文字X轴坐标放到单元格右边
+              textX = (startX + drawWidth - 6) * this.canvasRatio
+            }
+            drawText({
+              ctx: ctx,
+              x: textX,
+              y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
+              content: cell[this.customTableDataKey],
+              fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
+              fontFamily: cell.format.fontFamily,
+              fontColor: cell.format.fontColor,
+              textAlign: cell.format.textAlign,
+              textBaseline: cell.format.textBaseline
+            })
           }
-          drawText({
-            ctx: ctx,
-            x: textX,
-            y: (startY + (rowHeight * 0.5)) * this.canvasRatio,
-            content: cell[this.customTableDataKey],
-            fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
-            fontFamily: cell.format.fontFamily,
-            fontColor: cell.format.fontColor,
-            textAlign: cell.format.textAlign,
-            textBaseline: cell.format.textBaseline
-          })
           startX = startX + columnWidth
         }
         startX = this.columnStartWidth

@@ -135,9 +135,15 @@ export default {
     cellWidth: function () {
       // 默认列开始宽度
       let width = this.columnStartWidth
-      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0 && this.columns.length > this.currentSelect.startColumnIndex) {
-        if (this.columns[this.currentSelect.startColumnIndex].width) {
-          width = this.columns[this.currentSelect.startColumnIndex].width - 2
+      const startColumnIndex = this.currentSelect.startColumnIndex
+      const endColumnIndex = this.currentSelect.endColumnIndex
+      if (this.columns.length > 0 && startColumnIndex > 0 && endColumnIndex > 0 &&
+          this.columns.length > startColumnIndex && this.columns.length > endColumnIndex) {
+        width = 0
+        for (let i = startColumnIndex; i <= endColumnIndex; i++) {
+          if (this.columns[i - 1].width) {
+            width += this.columns[i - 1].width
+          }
         }
       }
       return width * this.ratio
@@ -146,9 +152,15 @@ export default {
     cellHeight: function () {
       // 默认行头部高度
       let height = this.rowHeaderHeight
-      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0 && this.rows.length > this.currentSelect.startRowIndex) {
-        if (this.rows[this.currentSelect.startRowIndex].height) {
-          height = this.rows[this.currentSelect.startRowIndex].height - 2
+      const startRowIndex = this.currentSelect.startRowIndex
+      const endRowIndex = this.currentSelect.endRowIndex
+      if (this.rows.length > 0 && startRowIndex > 0 && endRowIndex > 0 &&
+          this.rows.length > startRowIndex && this.rows.length > endRowIndex) {
+        height = 0
+        for (let i = startRowIndex; i <= endRowIndex; i++) {
+          if (this.rows[i - 1].height) {
+            height += this.rows[i - 1].height
+          }
         }
       }
       return height * this.ratio
