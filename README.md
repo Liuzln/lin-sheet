@@ -1,9 +1,15 @@
 # lin-sheet
 基于 canvas 的表格编辑器。
 
-![image](https://raw.githubusercontent.com/Liuzln/lin-sheet/master/gif/GIF%202020-4-8%2012-52-36.gif)   
+![image](https://raw.githubusercontent.com/Liuzln/lin-sheet/master/gif/GIF%202020-4-8%2012-52-36.gif)
 
-## :white_check_mark: TODO
+## 优化项清单
+- [x] canvas 离屏渲染
+- [x] 表格滚动时，从canvas离屏渲染的数据中裁剪所需区域，绘制到可视canvas上
+- [ ] canvas 离屏渲染可视部分
+- [ ] 更易用的鼠标点击控制光标
+
+## :white_check_mark: 开发项清单
 - [x] 渲染表格和内容
   - [x] 列名称默认为英文字母递增
   - [x] 行名称默认为数字递增
@@ -12,6 +18,9 @@
  - [x] 基础输入
  - [x] 中文输入
  - [x] 内容粘贴
+ - [ ] 日期选择
+  - [ ] 手动填写
+  - [ ] 弹出框选择
 - [x] 单元格操作
   - [x] 单元格选择
     - [x] 鼠标点击选择
@@ -37,6 +46,14 @@
   - [x] 自定义列名称
   - [x] 自定义行名称
   - [x] 自定义单元格展示Key
+- [ ] 行操作 Row 
+  - [ ] 编辑行名称
+  - [ ] 控制行高度
+  - [ ] 增加行的选择效果
+- [ ] 列操作 Cloumn
+  - [ ] 编辑列名称
+  - [ ] 控制列宽度
+  - [ ] 增加列的选择效果
 - [ ] API
   - [ ] 行 Row
     - [ ] 新建
