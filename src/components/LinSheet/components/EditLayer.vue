@@ -92,6 +92,16 @@ export default {
       type: Array,
       required: true
     },
+    // 列开始宽度
+    columnStartWidth: {
+      type: Number,
+      default: 45
+    },
+    // 行头部高度
+    rowHeaderHeight: {
+      type: Number,
+      default: 24
+    },
     // 自定义表格数据Key
     customTableDataKey: {
       type: String,
@@ -123,8 +133,9 @@ export default {
   computed: {
     // 单元格宽度
     cellWidth: function () {
-      let width = 90
-      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0 && this.columns.length < this.currentSelect.startColumnIndex) {
+      // 默认列开始宽度
+      let width = this.columnStartWidth
+      if (this.columns.length > 0 && this.currentSelect.startColumnIndex > 0 && this.columns.length > this.currentSelect.startColumnIndex) {
         if (this.columns[this.currentSelect.startColumnIndex].width) {
           width = this.columns[this.currentSelect.startColumnIndex].width - 2
         }
@@ -133,8 +144,9 @@ export default {
     },
     // 单元格高度
     cellHeight: function () {
-      let height = 25
-      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0 && this.rows.length < this.currentSelect.startRowIndex) {
+      // 默认行头部高度
+      let height = this.rowHeaderHeight
+      if (this.rows.length > 0 && this.currentSelect.startRowIndex > 0 && this.rows.length > this.currentSelect.startRowIndex) {
         if (this.rows[this.currentSelect.startRowIndex].height) {
           height = this.rows[this.currentSelect.startRowIndex].height - 2
         }
@@ -421,7 +433,7 @@ export default {
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
-        cellWidth: this.$refs.editSelection.offsetWidth,
+        cellWidth: this.cellWidth,
         clickX: offsetX,
         clickY: offsetY
       })
@@ -499,7 +511,7 @@ export default {
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
-        cellWidth: this.$refs.editSelection.offsetWidth,
+        cellWidth: this.cellWidth,
         textIndex: this.cursor.textIndex + inputValue.length
       })
       // 清空富文本输入框

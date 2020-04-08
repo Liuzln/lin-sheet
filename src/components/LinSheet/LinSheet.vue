@@ -10,6 +10,8 @@
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
+      :columnStartWidth="columnStartWidth"
+      :rowHeaderHeight="rowHeaderHeight"
       :customTableDataKey="customTableDataKey"
       :currentSelect="currentSelect"
       @changeTableData="handleChangeTableData"
@@ -416,7 +418,6 @@ export default {
     },
     // 处理点击表格
     handleClickSheet (e) {
-      // console.log(event)
       // 鼠标点击位置
       this.currentSelect.clickX = e.offsetX + (this.scrollX / this.canvasRatio)
       this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
@@ -440,6 +441,7 @@ export default {
             isRepeatClickColumn = true
           } else {
             this.currentSelect.startColumnIndex = columnIndex
+            this.currentSelect.endColumnIndex = columnIndex
             if (this.currentSelect.startColumnIndex > 0) {
               this.currentSelect.cellX = currentX - columnWidth
             } else {
@@ -463,6 +465,7 @@ export default {
             isRepeatClickRow = true
           } else {
             this.currentSelect.startRowIndex = rowIndex
+            this.currentSelect.endRowIndex = rowIndex
             if (this.currentSelect.startRowIndex > 0) {
               this.currentSelect.cellY = currrntY - rowHeight
             } else {
