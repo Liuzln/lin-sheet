@@ -2,6 +2,7 @@
   <div id="lin-sheet">
     <!-- 修改层 -->
     <edit-layer
+      ref="EditLayer"
       :ratio="ratio"
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
@@ -278,8 +279,9 @@ export default {
         }
       }, { passive: false })
 
-      // 键盘快捷键缩放
+      // 监听键盘按键
       addEventListener(window, 'keydown', (e) => {
+        // 键盘快捷键缩放
         // 按下Ctrl 以及以下任意一键：+ - 或 0
         if (e.ctrlKey) {
           // Ctrl +
@@ -300,6 +302,92 @@ export default {
           if (e.code === 'Digit0') {
             e.preventDefault()
             this.canvasRatio = this.browserRatio
+          }
+        }
+        console.log(e)
+        // 回车键 进入单元格编辑模式
+        if (e.code === 'Enter') {
+          this.currentSelect.isEditMode = true
+        }
+        // 方向键 控制选择的单元格
+        // 上
+        if (e.code === 'ArrowUp') {
+          if (this.currentSelect.startRowIndex - 1 > 0) {
+            // 选择单元格向上移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex,
+              endColumnIndex: this.currentSelect.startColumnIndex,
+              startRowIndex: this.currentSelect.startRowIndex - 1,
+              endRowIndex: this.currentSelect.startRowIndex - 1,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX,
+              cellY: this.currentSelect.cellY - this.rows[this.currentSelect.startRowIndex].height,
+              clickX: 0,
+              clickY: 0
+            }
+          }
+        }
+        // 右
+        if (e.code === 'ArrowRight') {
+          // 判断是否为编辑状态
+          if (this.currentSelect.isEditMode) {
+            // 移动光标
+            this.$refs.EditLayer.updateCursorPosByVector({
+              vector: 1
+            })
+          } else if (this.currentSelect.startColumnIndex < this.columns.length) {
+            // 选择单元格向上移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex + 1,
+              endColumnIndex: this.currentSelect.startColumnIndex + 1,
+              startRowIndex: this.currentSelect.startRowIndex,
+              endRowIndex: this.currentSelect.startRowIndex,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
+              cellY: this.currentSelect.cellY,
+              clickX: 0,
+              clickY: 0
+            }
+          }
+        }
+        // 下
+        if (e.code === 'ArrowDown') {
+          if (this.currentSelect.startRowIndex < this.rows.length) {
+            // 选择单元格向上移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex,
+              endColumnIndex: this.currentSelect.startColumnIndex,
+              startRowIndex: this.currentSelect.startRowIndex + 1,
+              endRowIndex: this.currentSelect.startRowIndex + 1,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX,
+              cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
+              clickX: 0,
+              clickY: 0
+            }
+          }
+        }
+        // 左
+        if (e.code === 'ArrowLeft') {
+          // 判断是否为编辑状态
+          if (this.currentSelect.isEditMode) {
+            // 移动光标
+            this.$refs.EditLayer.updateCursorPosByVector({
+              vector: -1
+            })
+          } else if (this.currentSelect.startColumnIndex - 1 > 0) {
+            // 选择单元格向上移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex - 1,
+              endColumnIndex: this.currentSelect.startColumnIndex - 1,
+              startRowIndex: this.currentSelect.startRowIndex,
+              endRowIndex: this.currentSelect.startRowIndex,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX - this.columns[this.currentSelect.startColumnIndex].width,
+              cellY: this.currentSelect.cellY,
+              clickX: 0,
+              clickY: 0
+            }
           }
         }
       }, { passive: false })
@@ -326,8 +414,8 @@ export default {
     handleClickSheet (e) {
       // console.log(event)
       // 鼠标点击位置
-      this.currentSelect.clickX = e.offsetX + this.currentX
-      this.currentSelect.clickY = e.offsetY + this.currentY
+      this.currentSelect.clickX = e.offsetX + (this.currentX / this.canvasRatio)
+      this.currentSelect.clickY = e.offsetY + (this.currentY / this.canvasRatio)
       let currentX = 0
       let columnIndex = 0
       let isRepeatClickColumn = false
@@ -407,7 +495,7 @@ export default {
           }
         }
       }
-      this.$refs.sheetLayer.refresh()
+      this.$refs.sheetLayer.refresh(true)
     },
     // 处理删除表格数据
     handleDeleteTableData ({ columnIndex, rowIndex }) {

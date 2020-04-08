@@ -108,6 +108,7 @@ export default {
       },
       // 内容选择图
       cellSelectionMap: [],
+      contentWidth: 0, // 内容宽度
       currentX: 0,
       currentY: 0
     }
@@ -279,7 +280,7 @@ export default {
         content: content
       })
       // 文字宽度
-      const contentWidth = this._getTextWidth({
+      this.contentWidth = this._getTextWidth({
         ctx: ctx,
         text: content
       })
@@ -291,11 +292,11 @@ export default {
       } else if (textAlign === 'center') {
         // 居中对齐的文字：
         // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
-        startX = cellWidth / 2 - contentWidth / 2
+        startX = cellWidth / 2 - this.contentWidth / 2
       } else if (textAlign === 'end' || textAlign === 'right') {
         // 右对齐的文字：
         // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
-        startX = cellWidth - contentWidth - 5
+        startX = cellWidth - this.contentWidth - 6
       }
       let textIndex = 0
       for (let len = this.cellSelectionMap.length; textIndex < len; textIndex++) {
@@ -327,7 +328,7 @@ export default {
         content: content
       })
       // 文字宽度
-      const contentWidth = this._getTextWidth({
+      this.contentWidth = this._getTextWidth({
         ctx: ctx,
         text: content
       })
@@ -339,12 +340,13 @@ export default {
       } else if (textAlign === 'center') {
         // 居中对齐的文字：
         // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
-        startX = cellWidth / 2 - contentWidth / 2
+        startX = cellWidth / 2 - this.contentWidth / 2
       } else if (textAlign === 'end' || textAlign === 'right') {
         // 右对齐的文字：
         // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
-        startX = cellWidth - contentWidth - 5
+        startX = cellWidth - this.contentWidth - 6
       }
+      // 查询光标X坐标
       for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
         if (textIndex > i) {
           startX += this.cellSelectionMap[i]
@@ -354,6 +356,40 @@ export default {
       }
       this.cursor.textIndex = textIndex
       this.cursor.x = startX
+    },
+    /**
+     * 根据向量
+     * @param { String } vector - 向量
+     */
+    updateCursorPosByVector ({ vector }) {
+      // 判断是否超出移动范围
+      if (this.cursor.textIndex + vector <= this.cellSelectionMap.length && this.cursor.textIndex + vector > -1) {
+        let startX = 0
+        if (this.cell.format.textAlign === 'start' || this.cell.format.textAlign === 'left') {
+          // 左对齐的文字：
+          // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+          startX = 6
+        } else if (this.cell.format.textAlign === 'center') {
+          // 居中对齐的文字：
+          // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+          startX = this.cellWidth / 2 - this.contentWidth / 2
+        } else if (this.cell.format.textAlign === 'end' || this.cell.format.textAlign === 'right') {
+          // 右对齐的文字：
+          // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+          startX = this.cellWidth - this.contentWidth - 6
+        }
+        // 查询光标X坐标
+        for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
+          console.log(this.cellSelectionMap[i])
+          if (this.cursor.textIndex + vector > i) {
+            startX += this.cellSelectionMap[i]
+          } else {
+            break
+          }
+        }
+        this.cursor.textIndex = this.cursor.textIndex + vector
+        this.cursor.x = startX
+      }
     },
     // 处理点击选择区域
     handleClickEditSelection (event) {
