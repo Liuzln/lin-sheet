@@ -416,18 +416,10 @@ export default {
       this.sheetHeight = this.height
       this.$refs.sheetLayer.refresh()
     },
-    // 处理点击表格
-    handleClickSheet (e) {
-      // 鼠标点击位置
-      this.currentSelect.clickX = e.offsetX + (this.scrollX / this.canvasRatio)
-      this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
-      let currentX = 0
+    // 根据鼠标点击坐标获取单元格位置
+    _getCellLocationByMousePos (clickX, clickY) {
       let columnIndex = 0
-      let isRepeatClickColumn = false
-      let currentY = 0
-      let rowIndex = 0
-      let isRepeatClickRow = false
-      // 判断点击X轴上的哪一个
+      let x = 0
       for (let len = this.columns.length; columnIndex <= len; columnIndex++) {
         let columnWidth = 0
         if (columnIndex === 0) {
@@ -435,23 +427,13 @@ export default {
         } else {
           columnWidth = this.columns[columnIndex - 1].width * this.ratio
         }
-        currentX += columnWidth
-        if (currentX >= this.currentSelect.clickX) {
-          if (this.currentSelect.startColumnIndex === columnIndex) {
-            isRepeatClickColumn = true
-          } else {
-            this.currentSelect.startColumnIndex = columnIndex
-            this.currentSelect.endColumnIndex = columnIndex
-            if (this.currentSelect.startColumnIndex > 0) {
-              this.currentSelect.cellX = currentX - columnWidth
-            } else {
-              this.currentSelect.cellX = 0
-            }
-          }
+        x += columnWidth
+        if (x >= clickX) {
           break
         }
       }
-      // 判断点击Y轴上的哪一个
+      let rowIndex = 0
+      let y = 0
       for (let len = this.rows.length; rowIndex <= len; rowIndex++) {
         let rowHeight = 0
         if (rowIndex === 0) {
@@ -459,65 +441,79 @@ export default {
         } else {
           rowHeight = this.rows[rowIndex - 1].height * this.ratio
         }
-        currentY += rowHeight
-        if (currentY >= this.currentSelect.clickY) {
-          if (this.currentSelect.startRowIndex === rowIndex) {
-            isRepeatClickRow = true
-          } else {
-            this.currentSelect.startRowIndex = rowIndex
-            this.currentSelect.endRowIndex = rowIndex
-            if (this.currentSelect.startRowIndex > 0) {
-              this.currentSelect.cellY = currentY - rowHeight
-            } else {
-              this.currentSelect.cellY = 0
-            }
-          }
+        y += rowHeight
+        if (y >= clickY) {
           break
         }
       }
-      // 判断是否为二次点击
-      if (isRepeatClickColumn && isRepeatClickRow) {
-        this.currentSelect.isEditMode = true
-      } else {
-        this.currentSelect.isEditMode = false
+      return [columnIndex, rowIndex]
+    },
+    // 根据单元格位置获取单元格位于表格的XY坐标
+    _getCellPosByCellLocation (x, y) {
+      let cellX = 0
+      let cellY = 0
+      // 获取单元格X坐标
+      for (let i = 0; i < x; i++) {
+        if (i === 0) {
+          cellX = this.columnStartWidth * this.ratio
+        } else {
+          cellX += this.columns[i - 1].width * this.ratio
+        }
       }
+      // 获取单元格Y坐标
+      for (let i = 0; i < y; i++) {
+        if (i === 0) {
+          cellY = this.rowHeaderHeight * this.ratio
+        } else {
+          cellY += this.rows[i - 1].height * this.ratio
+        }
+      }
+      return [cellX, cellY]
+    },
+    // 处理点击表格
+    handleClickSheet (e) {
+      // 鼠标点击位置
+      this.currentSelect.clickX = e.offsetX + (this.scrollX / this.canvasRatio)
+      this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
+      // 获取单元格坐标
+      const cellLocation = this._getCellLocationByMousePos(this.currentSelect.clickX, this.currentSelect.clickY)
+      let cell = this.tableData[cellLocation[1] - 1][cellLocation[0] - 1]
       // 判断点击的单元格是否为已合并的单元格
-      let cell = this.tableData[rowIndex - 1][columnIndex - 1]
       if (cell.attr.columnSpan > 0 && cell.attr.rowSpan > 0) {
-        this.currentSelect.startColumnIndex = columnIndex
-        this.currentSelect.endColumnIndex = columnIndex - 1 + cell.attr.columnSpan
-        this.currentSelect.startRowIndex = rowIndex
-        this.currentSelect.endRowIndex = rowIndex - 1 + cell.attr.rowSpan
+        // 获取单元格位置
+        const cellPos = this._getCellPosByCellLocation(cellLocation[0], cellLocation[1])
+        this.currentSelect.cellX = cellPos[0]
+        this.currentSelect.cellY = cellPos[1]
+        // 判断是否为重复点击
+        if (this.currentSelect.startColumnIndex === cellLocation[0] && this.currentSelect.startRowIndex === cellLocation[1]) {
+          this.currentSelect.isEditMode = true
+        } else {
+          this.currentSelect.isEditMode = false
+        }
+        this.currentSelect.startColumnIndex = cellLocation[0]
+        this.currentSelect.endColumnIndex = cellLocation[0] - 1 + cell.attr.columnSpan
+        this.currentSelect.startRowIndex = cellLocation[1]
+        this.currentSelect.endRowIndex = cellLocation[1] - 1 + cell.attr.rowSpan
       } else {
-        console.log('demo')
-        // 查询合并的首个单元格
-        const mainCellPos = cell.attr.mainCellPos
+        // 处理已被合并的单元格
+        const mainCellPos = cell.attr.mainCellPos // 合并单元格的主单元格
         cell = this.tableData[mainCellPos[1]][mainCellPos[0]]
-        console.log('cell:', cell)
+        // 判断是否为重复点击
+        if (this.currentSelect.startColumnIndex === mainCellPos[0] + 1 && this.currentSelect.startRowIndex === mainCellPos[1] + 1) {
+          this.currentSelect.isEditMode = true
+        } else {
+          this.currentSelect.isEditMode = false
+        }
         this.currentSelect.startColumnIndex = mainCellPos[0] + 1
         this.currentSelect.endColumnIndex = mainCellPos[0] + cell.attr.columnSpan
         this.currentSelect.startRowIndex = mainCellPos[1] + 1
         this.currentSelect.endRowIndex = mainCellPos[1] + cell.attr.rowSpan
-        let cellX = 0
-        let cellY = 0
-        // 获取单元格X坐标
-        for (let i = 0; i < this.currentSelect.startColumnIndex; i++) {
-          if (i === 0) {
-            cellX = this.columnStartWidth * this.ratio
-          } else {
-            cellX += this.columns[i - 1].width * this.ratio
-          }
-        }
-        // 获取单元格Y坐标
-        for (let i = 0; i < this.currentSelect.startRowIndex; i++) {
-          if (i === 0) {
-            cellY = this.rowHeaderHeight * this.ratio
-          } else {
-            cellY += this.rows[i - 1].height * this.ratio
-          }
-        }
-        this.currentSelect.cellX = cellX
-        this.currentSelect.cellY = cellY
+        // 获取单元格位置
+        const cellPos = this._getCellPosByCellLocation(
+          this.currentSelect.startColumnIndex, this.currentSelect.startRowIndex
+        )
+        this.currentSelect.cellX = cellPos[0]
+        this.currentSelect.cellY = cellPos[1]
       }
     },
     // 处理修改表格数据
