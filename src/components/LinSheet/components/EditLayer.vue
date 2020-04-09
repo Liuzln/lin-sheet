@@ -340,6 +340,7 @@ export default {
         }
       }
       this.cursor.x = startX
+      this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
       this.cursor.textIndex = textIndex
     },
     /**
@@ -389,6 +390,7 @@ export default {
       }
       this.cursor.textIndex = textIndex
       this.cursor.x = startX
+      this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
     },
     /**
      * 根据向量
@@ -422,6 +424,7 @@ export default {
         }
         this.cursor.textIndex = this.cursor.textIndex + vector
         this.cursor.x = startX
+        this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
       }
     },
     // 处理点击选择区域
@@ -506,7 +509,16 @@ export default {
       console.log(e)
       this.$emit('deleteTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
-        rowIndex: this.currentSelect.startRowIndex
+        rowIndex: this.currentSelect.startRowIndex,
+        cursorIndex: this.cursor.textIndex
+      })
+      // 更新光标位置
+      this._updateCursorPosByTextIndex({
+        ctx: this.editContentContext,
+        textAlign: this.cell.format.textAlign,
+        content: this.cell[this.customTableDataKey],
+        cellWidth: this.cellWidth,
+        textIndex: this.cursor.textIndex - 1
       })
     },
     // 修改表格数据
@@ -514,9 +526,9 @@ export default {
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
-        type: 'content',
-        textIndex: this.cursor.textIndex,
-        data: inputValue
+        dataType: 'text',
+        data: inputValue,
+        cursorIndex: this.cursor.textIndex
       })
       // 更新光标位置
       this._updateCursorPosByTextIndex({

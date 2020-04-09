@@ -280,7 +280,6 @@ export default {
           }
         }
       }, { passive: false })
-
       // 监听键盘按键
       addEventListener(window, 'keydown', (e) => {
         // 键盘快捷键缩放
@@ -306,94 +305,96 @@ export default {
             this.canvasRatio = this.browserRatio
           }
         }
-        console.log(e)
-        // 回车键 进入单元格编辑模式
-        if (e.code === 'Enter') {
-          this.currentSelect.isEditMode = true
-        }
-        // 方向键 控制选择的单元格
-        // 上
-        if (e.code === 'ArrowUp') {
-          if (this.currentSelect.startRowIndex - 1 > 0) {
-            // 选择单元格向上移动
-            this.currentSelect = {
-              startColumnIndex: this.currentSelect.startColumnIndex,
-              endColumnIndex: this.currentSelect.startColumnIndex,
-              startRowIndex: this.currentSelect.startRowIndex - 1,
-              endRowIndex: this.currentSelect.startRowIndex - 1,
-              isEditMode: this.currentSelect.isEditMode,
-              cellX: this.currentSelect.cellX,
-              cellY: this.currentSelect.cellY - this.rows[this.currentSelect.startRowIndex].height,
-              clickX: 0,
-              clickY: 0
-            }
-          }
-        }
-        // 右
-        if (e.code === 'ArrowRight') {
-          // 判断是否为编辑状态
-          if (this.currentSelect.isEditMode) {
-            // 移动光标
-            this.$refs.EditLayer.updateCursorPosByVector({
-              vector: 1
-            })
-          } else if (this.currentSelect.startColumnIndex < this.columns.length) {
-            // 选择单元格向上移动
-            this.currentSelect = {
-              startColumnIndex: this.currentSelect.startColumnIndex + 1,
-              endColumnIndex: this.currentSelect.startColumnIndex + 1,
-              startRowIndex: this.currentSelect.startRowIndex,
-              endRowIndex: this.currentSelect.startRowIndex,
-              isEditMode: this.currentSelect.isEditMode,
-              cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
-              cellY: this.currentSelect.cellY,
-              clickX: 0,
-              clickY: 0
-            }
-          }
-        }
-        // 下
-        if (e.code === 'ArrowDown') {
-          if (this.currentSelect.startRowIndex < this.rows.length) {
-            // 选择单元格向上移动
-            this.currentSelect = {
-              startColumnIndex: this.currentSelect.startColumnIndex,
-              endColumnIndex: this.currentSelect.startColumnIndex,
-              startRowIndex: this.currentSelect.startRowIndex + 1,
-              endRowIndex: this.currentSelect.startRowIndex + 1,
-              isEditMode: this.currentSelect.isEditMode,
-              cellX: this.currentSelect.cellX,
-              cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
-              clickX: 0,
-              clickY: 0
-            }
-          }
-        }
-        // 左
-        if (e.code === 'ArrowLeft') {
-          // 判断是否为编辑状态
-          if (this.currentSelect.isEditMode) {
-            // 移动光标
-            this.$refs.EditLayer.updateCursorPosByVector({
-              vector: -1
-            })
-          } else if (this.currentSelect.startColumnIndex - 1 > 0) {
-            // 选择单元格向上移动
-            this.currentSelect = {
-              startColumnIndex: this.currentSelect.startColumnIndex - 1,
-              endColumnIndex: this.currentSelect.startColumnIndex - 1,
-              startRowIndex: this.currentSelect.startRowIndex,
-              endRowIndex: this.currentSelect.startRowIndex,
-              isEditMode: this.currentSelect.isEditMode,
-              cellX: this.currentSelect.cellX - this.columns[this.currentSelect.startColumnIndex].width,
-              cellY: this.currentSelect.cellY,
-              clickX: 0,
-              clickY: 0
-            }
-          }
-        }
-      }, { passive: false })
+      })
     }
+    // 监听键盘按键
+    addEventListener(window, 'keydown', (e) => {
+      // 回车键 进入单元格编辑模式
+      if (e.code === 'Enter') {
+        this.currentSelect.isEditMode = true
+      }
+      // 方向键 控制选择的单元格
+      // 上
+      if (e.code === 'ArrowUp') {
+        if (this.currentSelect.startRowIndex - 1 > 0) {
+          // 选择单元格向上移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex,
+            endColumnIndex: this.currentSelect.startColumnIndex,
+            startRowIndex: this.currentSelect.startRowIndex - 1,
+            endRowIndex: this.currentSelect.startRowIndex - 1,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this.currentSelect.cellX,
+            cellY: this.currentSelect.cellY - this.rows[this.currentSelect.startRowIndex].height,
+            clickX: 0,
+            clickY: 0
+          }
+        }
+      }
+      // 右
+      if (e.code === 'ArrowRight') {
+        // 判断是否为编辑状态
+        if (this.currentSelect.isEditMode) {
+          // 移动光标
+          this.$refs.EditLayer.updateCursorPosByVector({
+            vector: 1
+          })
+        } else if (this.currentSelect.startColumnIndex < this.columns.length) {
+          // 选择单元格向上移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex + 1,
+            endColumnIndex: this.currentSelect.startColumnIndex + 1,
+            startRowIndex: this.currentSelect.startRowIndex,
+            endRowIndex: this.currentSelect.startRowIndex,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
+            cellY: this.currentSelect.cellY,
+            clickX: 0,
+            clickY: 0
+          }
+        }
+      }
+      // 下
+      if (e.code === 'ArrowDown') {
+        if (this.currentSelect.startRowIndex < this.rows.length) {
+          // 选择单元格向上移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex,
+            endColumnIndex: this.currentSelect.startColumnIndex,
+            startRowIndex: this.currentSelect.startRowIndex + 1,
+            endRowIndex: this.currentSelect.startRowIndex + 1,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this.currentSelect.cellX,
+            cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
+            clickX: 0,
+            clickY: 0
+          }
+        }
+      }
+      // 左
+      if (e.code === 'ArrowLeft') {
+        // 判断是否为编辑状态
+        if (this.currentSelect.isEditMode) {
+          // 移动光标
+          this.$refs.EditLayer.updateCursorPosByVector({
+            vector: -1
+          })
+        } else if (this.currentSelect.startColumnIndex - 1 > 0) {
+          // 选择单元格向上移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex - 1,
+            endColumnIndex: this.currentSelect.startColumnIndex - 1,
+            startRowIndex: this.currentSelect.startRowIndex,
+            endRowIndex: this.currentSelect.startRowIndex,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this.currentSelect.cellX - this.columns[this.currentSelect.startColumnIndex].width,
+            cellY: this.currentSelect.cellY,
+            clickX: 0,
+            clickY: 0
+          }
+        }
+      }
+    }, { passive: false })
     addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
     addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
@@ -516,34 +517,46 @@ export default {
         this.currentSelect.cellY = cellPos[1]
       }
     },
-    // 处理修改表格数据
-    handleChangeTableData ({ columnIndex, rowIndex, type, textIndex, data }) {
-      console.log(columnIndex)
-      console.log(rowIndex)
-      console.log(type)
-      console.log(textIndex)
-      console.log(data)
-      if (type === 'content') {
+    /**
+     * 处理修改表格数据
+     * @param { Number } columnIndex 列索引
+     * @param { Number } rowIndex 行索引
+     * @param { Number } dataType 内容类型
+     * @param { Number } data 修改数据
+     * @param { Number } cursorIndex 光标位置
+     */
+    handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex }) {
+      if (dataType === 'text') {
         console.log(data)
         console.log('customTableDataKey:', this.customTableDataKey)
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         const content = cell[this.customTableDataKey]
-        if (cell.contentType === 'text') {
-          if (content.length > 0) {
-            cell[this.customTableDataKey] = content.slice(0, textIndex) + data + content.slice(textIndex)
-          } else {
-            cell[this.customTableDataKey] += data
-          }
+        if (content.length > 0) {
+          cell[this.customTableDataKey] = content.slice(0, cursorIndex) + data + content.slice(cursorIndex)
+        } else {
+          cell[this.customTableDataKey] += data
         }
       }
       this.$refs.sheetLayer.refresh(true)
+      const event = {
+        columnIndex: columnIndex,
+        rowIndex: rowIndex,
+        dataType: dataType,
+        data: data,
+        cursorIndex: cursorIndex
+      }
+      this.$emit('changeTableData', event)
     },
     // 处理删除表格数据
-    handleDeleteTableData ({ columnIndex, rowIndex }) {
+    handleDeleteTableData ({ columnIndex, rowIndex, cursorIndex }) {
       console.log(columnIndex)
       console.log(rowIndex)
-      this.tableData[columnIndex - 1][rowIndex - 1].content = this.tableData[columnIndex - 1][rowIndex - 1].content.substr(0, this.tableData[columnIndex - 1][rowIndex - 1].content.length - 1)
-      this.$refs.sheetLayer.refresh()
+      const cell = this.tableData[columnIndex - 1][rowIndex - 1]
+      const content = cell[this.customTableDataKey]
+      if (content.length > 0) {
+        cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+      }
+      this.$refs.sheetLayer.refresh(true)
     }
   }
 }
