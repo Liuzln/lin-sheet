@@ -339,18 +339,18 @@ export default {
     async drawCell (ctx) {
       let startX = this.columnStartWidth
       let startY = this.rowHeaderHeight
-      for (let rowIndex = 0, len1 = this.tableData.length; rowIndex < len1; rowIndex++) {
-        const row = this.tableData[rowIndex]
-        const rowHeight = this.rows[rowIndex].height
-        for (let cloumnIndex = 0, len2 = row.length; cloumnIndex < len2; cloumnIndex++) {
-          const cell = row[cloumnIndex]
-          const columnWidth = this.columns[cloumnIndex].width
+      for (let columnIndex = 0, len1 = this.tableData.length; columnIndex < len1; columnIndex++) {
+        const column = this.tableData[columnIndex]
+        const columnWidth = this.columns[columnIndex].width
+        for (let rowIndex = 0, len2 = column.length; rowIndex < len2; rowIndex++) {
+          const cell = column[rowIndex]
+          const rowHeight = this.rows[rowIndex].height
           // 判断此单元格是否需要已被合并
           if (cell.attr.columnSpan > 0 && cell.attr.rowSpan > 0) {
             // 获取绘制宽度
             let drawWidth = 0
             for (let i = 0; i < cell.attr.columnSpan; i++) {
-              drawWidth += this.columns[cloumnIndex + i].width
+              drawWidth += this.columns[columnIndex + i].width
             }
             // 绘制高度
             let drawHeight = 0
@@ -406,10 +406,10 @@ export default {
               textBaseline: cell.format.textBaseline
             })
           }
-          startX = startX + columnWidth
+          startY = startY + rowHeight
         }
-        startX = this.columnStartWidth
-        startY = startY + rowHeight
+        startY = this.rowHeaderHeight
+        startX = startX + columnWidth
       }
     }
   }

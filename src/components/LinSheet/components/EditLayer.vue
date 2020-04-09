@@ -168,7 +168,7 @@ export default {
     // 单元格数据
     cell: function () {
       if (this.tableData.length > 0) {
-        return this.tableData[this.currentSelect.startRowIndex - 1][this.currentSelect.startColumnIndex - 1]
+        return this.tableData[this.currentSelect.startColumnIndex - 1][this.currentSelect.startRowIndex - 1]
       }
       return {}
     },

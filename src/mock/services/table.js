@@ -24,9 +24,9 @@ const tableData = (options) => {
 
   // 表格数据
   const tableData = []
-  for (let ri = (rowIndex - 1) * rowSize, riLen = rowIndex * rowSize; ri < riLen; ri++) {
+  for (let ci = (columnIndex - 1) * columnSize, ciLen = columnIndex * columnSize; ci < ciLen; ci++) {
     const tempList = []
-    for (let ci = (columnIndex - 1) * columnSize, ciLen = columnIndex * columnSize; ci < ciLen; ci++) {
+    for (let ri = (rowIndex - 1) * rowSize, riLen = rowIndex * rowSize; ri < riLen; ri++) {
       let columnSpan = 1
       let rowSpan = 1
       let mainCellPos = []

@@ -477,7 +477,7 @@ export default {
       this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
       // 获取单元格坐标
       const cellLocation = this._getCellLocationByMousePos(this.currentSelect.clickX, this.currentSelect.clickY)
-      let cell = this.tableData[cellLocation[1] - 1][cellLocation[0] - 1]
+      let cell = this.tableData[cellLocation[0] - 1][cellLocation[1] - 1]
       // 判断点击的单元格是否为已合并的单元格
       if (cell.attr.columnSpan > 0 && cell.attr.rowSpan > 0) {
         // 获取单元格位置
@@ -497,7 +497,7 @@ export default {
       } else {
         // 处理已被合并的单元格
         const mainCellPos = cell.attr.mainCellPos // 合并单元格的主单元格
-        cell = this.tableData[mainCellPos[1]][mainCellPos[0]]
+        cell = this.tableData[mainCellPos[0]][mainCellPos[1]]
         // 判断是否为重复点击
         if (this.currentSelect.startColumnIndex === mainCellPos[0] + 1 && this.currentSelect.startRowIndex === mainCellPos[1] + 1) {
           this.currentSelect.isEditMode = true
@@ -526,7 +526,7 @@ export default {
       if (type === 'content') {
         console.log(data)
         console.log('customTableDataKey:', this.customTableDataKey)
-        const cell = this.tableData[rowIndex - 1][columnIndex - 1]
+        const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         const content = cell[this.customTableDataKey]
         if (cell.contentType === 'text') {
           if (content.length > 0) {
@@ -542,7 +542,7 @@ export default {
     handleDeleteTableData ({ columnIndex, rowIndex }) {
       console.log(columnIndex)
       console.log(rowIndex)
-      this.tableData[rowIndex - 1][columnIndex - 1].content = this.tableData[rowIndex - 1][columnIndex - 1].content.substr(0, this.tableData[rowIndex - 1][columnIndex - 1].content.length - 1)
+      this.tableData[columnIndex - 1][rowIndex - 1].content = this.tableData[columnIndex - 1][rowIndex - 1].content.substr(0, this.tableData[columnIndex - 1][rowIndex - 1].content.length - 1)
       this.$refs.sheetLayer.refresh()
     }
   }
@@ -554,6 +554,7 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .edit-layer {
