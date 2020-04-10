@@ -79,7 +79,6 @@ export default {
       e.preventDefault()
     })
     addEventListener(window, 'mousemove', (e) => {
-      e.preventDefault()
       const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
       const visibleWidth = this.windowWidth - 16
       if (this.lock === false) {

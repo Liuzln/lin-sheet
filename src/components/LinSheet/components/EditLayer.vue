@@ -9,6 +9,7 @@
     >
       <!-- 单元格框选区域 -->
       <canvas
+        v-show="cell.contentType === 'text'"
         ref="editSelection"
         class="edit-selection"
         :style="`width: ${ cellWidth }px;
@@ -21,6 +22,21 @@
         class="edit-border"
         :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
       />
+      <a-date-picker
+        v-if="cell.contentType === 'date'"
+        :open="isOpenDatePicker"
+        placeholder="日期"
+        :value="$moment(cell.content)"
+        :style="`z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
+        @change="handleChangeDate"
+      >
+        <div
+          :style="`width: ${ cellWidth }px;
+                   height: ${ cellHeight }px;`"
+          @click="() => { this.isOpenDatePicker = true }"
+        >
+        </div>
+      </a-date-picker>
       <!-- 单元格文本内容 -->
       <canvas
         ref="editContent"
@@ -29,6 +45,7 @@
       />
       <!-- 光标效果 -->
       <div
+        v-show="cell.contentType === 'text'"
         class="edit-cursor"
         :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px;
                  left: ${ cursor.x }px;
@@ -49,13 +66,15 @@
 </template>
 
 <script>
+import Vue from 'vue'
+import { DatePicker } from 'ant-design-vue'
 import { IEVersion } from '@/utils/util'
 import { addEventListener } from '@/utils/event'
 
+Vue.use(DatePicker)
+
 export default {
   name: 'editLayer',
-  components: {
-  },
   props: {
     // 是否是选择当前表格
     isSelectCurrentSheet: {
@@ -127,7 +146,8 @@ export default {
       cellSelectionMap: [],
       contentWidth: 0, // 内容宽度
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      isOpenDatePicker: false
     }
   },
   computed: {
@@ -430,28 +450,32 @@ export default {
     // 处理点击选择区域
     handleClickEditSelection (event) {
       console.log('handleClickCell')
-      let offsetX = 0
-      let offsetY = 0
-      if (event) {
-        offsetX = event.offsetX
-        offsetY = event.offsetY
-      } else {
-        // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
-        offsetX = this.currentSelect.clickX - this.currentSelect.cellX
-        offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+      if (this.cell.contentType === 'text') {
+        let offsetX = 0
+        let offsetY = 0
+        if (event) {
+          offsetX = event.offsetX
+          offsetY = event.offsetY
+        } else {
+          // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+          offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+          offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+        }
+        // console.log('offsetX:', offsetX)
+        // console.log('offsetY:', offsetY)
+        this.$refs.CellTextarea.focus()
+        // 更新光标位置
+        this._updateCursorPos({
+          ctx: this.editContentContext,
+          textAlign: this.cell.format.textAlign,
+          content: this.cell[this.customTableDataKey],
+          cellWidth: this.cellWidth,
+          clickX: offsetX,
+          clickY: offsetY
+        })
+      } else if (this.cell.contentType === 'date') {
+        this.isOpenDatePicker = true
       }
-      // console.log('offsetX:', offsetX)
-      // console.log('offsetY:', offsetY)
-      this.$refs.CellTextarea.focus()
-      // 更新光标位置
-      this._updateCursorPos({
-        ctx: this.editContentContext,
-        textAlign: this.cell.format.textAlign,
-        content: this.cell[this.customTableDataKey],
-        cellWidth: this.cellWidth,
-        clickX: offsetX,
-        clickY: offsetY
-      })
     },
     // 粘贴
     // ClipboardEvent.clipboardData: https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent/clipboardData
@@ -519,6 +543,17 @@ export default {
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
         textIndex: this.cursor.textIndex - 1
+      })
+    },
+    // 修改日期
+    handleChangeDate (date, dateString) {
+      this.isOpenDatePicker = false
+      // 修改单元格内容
+      this.$emit('changeTableData', {
+        columnIndex: this.currentSelect.startColumnIndex,
+        rowIndex: this.currentSelect.startRowIndex,
+        dataType: 'date',
+        data: date
       })
     },
     // 修改表格数据

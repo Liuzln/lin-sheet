@@ -1,5 +1,6 @@
 import Mock from 'mockjs2'
 import { builder, getBody } from '../util'
+// import moment from 'moment'
 
 const tableData = (options) => {
   const body = getBody(options)
@@ -60,39 +61,75 @@ const tableData = (options) => {
         rowSpan = 0
         mainCellPos = [2, 2]
       }
-      tempList.push({
-        // 内容
-        content: ri < 10 && ci < 10 ? `${ci}-${ri}` : '',
-        // 内容类型
-        contentType: 'text',
-        attr: {
-          // 列的跨度
-          columnSpan: columnSpan,
-          // 行的跨度
-          rowSpan: rowSpan,
-          mainCellPos: mainCellPos
-        },
-        // 单元格格式
-        format: {
-          fontSize: '12',
-          fontFamily: 'bold 黑体',
-          fontColor: 'RGB(0, 0, 0)',
-          textBaseline: 'middle',
-          textAlign: 'center',
-          // 右边框
-          borderRight: {
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: '#000000'
+      if (ci === 5 && ri === 5) {
+        tempList.push({
+          // 内容
+          content: '2020-04-10',
+          // 内容类型
+          contentType: 'date',
+          attr: {
+            // 列的跨度
+            columnSpan: columnSpan,
+            // 行的跨度
+            rowSpan: rowSpan,
+            mainCellPos: mainCellPos
           },
-          // 下边框
-          borderBottom: {
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: '#000000'
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            fontFamily: 'bold 黑体',
+            fontColor: 'RGB(0, 0, 0)',
+            textBaseline: 'middle',
+            textAlign: 'center',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
           }
-        }
-      })
+        })
+      } else {
+        tempList.push({
+          // 内容
+          content: ri < 10 && ci < 10 ? `${ci}-${ri}` : '',
+          // 内容类型
+          contentType: 'text',
+          attr: {
+            // 列的跨度
+            columnSpan: columnSpan,
+            // 行的跨度
+            rowSpan: rowSpan,
+            mainCellPos: mainCellPos
+          },
+          // 单元格格式
+          format: {
+            fontSize: '12',
+            fontFamily: 'bold 黑体',
+            fontColor: 'RGB(0, 0, 0)',
+            textBaseline: 'middle',
+            textAlign: 'center',
+            // 右边框
+            borderRight: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            },
+            // 下边框
+            borderBottom: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: '#000000'
+            }
+          }
+        })
+      }
     }
     tableData.push(tempList)
   }

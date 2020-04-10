@@ -9,6 +9,7 @@
 </template>
 
 <script>
+import moment from 'moment'
 import { evaluate } from '@/utils/math'
 import {
   drawVerticalLine, drawHorizontalLine,
@@ -394,17 +395,31 @@ export default {
               // 右对齐 将文字X轴坐标放到单元格右边
               textX = (startX + drawWidth - 6) * this.canvasRatio
             }
-            drawText({
-              ctx: ctx,
-              x: textX,
-              y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
-              content: cell[this.customTableDataKey],
-              fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
-              fontFamily: cell.format.fontFamily,
-              fontColor: cell.format.fontColor,
-              textAlign: cell.format.textAlign,
-              textBaseline: cell.format.textBaseline
-            })
+            if (cell.contentType === 'text') {
+              drawText({
+                ctx: ctx,
+                x: textX,
+                y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
+                content: cell[this.customTableDataKey],
+                fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
+                fontFamily: cell.format.fontFamily,
+                fontColor: cell.format.fontColor,
+                textAlign: cell.format.textAlign,
+                textBaseline: cell.format.textBaseline
+              })
+            } else if (cell.contentType === 'date') {
+              drawText({
+                ctx: ctx,
+                x: textX,
+                y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
+                content: moment(cell[this.customTableDataKey]).format('YYYY-MM-DD'),
+                fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
+                fontFamily: cell.format.fontFamily,
+                fontColor: cell.format.fontColor,
+                textAlign: cell.format.textAlign,
+                textBaseline: cell.format.textBaseline
+              })
+            }
           }
           startY = startY + rowHeight
         }

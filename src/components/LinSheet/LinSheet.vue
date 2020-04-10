@@ -541,7 +541,6 @@ export default {
     handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex }) {
       if (dataType === 'text') {
         console.log(data)
-        console.log('customTableDataKey:', this.customTableDataKey)
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         const content = cell[this.customTableDataKey]
         if (content.length > 0) {
@@ -549,6 +548,11 @@ export default {
         } else {
           cell[this.customTableDataKey] += data
         }
+      } else if (dataType === 'date') {
+        // 日期类型
+        console.log(data)
+        const cell = this.tableData[columnIndex - 1][rowIndex - 1]
+        cell[this.customTableDataKey] = data
       }
       this.$refs.sheetLayer.refresh(true)
       const event = {
