@@ -180,8 +180,8 @@ export default {
       if ((!this.offScreenCanvas && this.columnTotalWidth > this.columnStartWidth && this.rowTotalHeight > this.rowHeaderHeight) || force) {
         this.offScreenCanvas = document.createElement('canvas')
         // 离屏渲染的宽高是内容宽高
-        this.offScreenCanvas.width = this.columnTotalWidth * this.canvasRatio
-        this.offScreenCanvas.height = this.rowTotalHeight * this.canvasRatio
+        this.offScreenCanvas.width = this.columnTotalWidth * this.canvasRatio + 1
+        this.offScreenCanvas.height = this.rowTotalHeight * this.canvasRatio + 1
         this.offScreenCanvasContext = this.offScreenCanvas.getContext('2d')
         // 绘制所需内容
         this.drawColumnHeader(this.offScreenCanvasContext)

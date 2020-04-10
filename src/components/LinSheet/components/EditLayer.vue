@@ -138,7 +138,7 @@ export default {
       const startColumnIndex = this.currentSelect.startColumnIndex
       const endColumnIndex = this.currentSelect.endColumnIndex
       if (this.columns.length > 0 && startColumnIndex > 0 && endColumnIndex > 0 &&
-          this.columns.length > startColumnIndex && this.columns.length > endColumnIndex) {
+          this.columns.length >= startColumnIndex && this.columns.length >= endColumnIndex) {
         width = 0
         for (let i = startColumnIndex; i <= endColumnIndex; i++) {
           if (this.columns[i - 1].width) {
@@ -155,7 +155,7 @@ export default {
       const startRowIndex = this.currentSelect.startRowIndex
       const endRowIndex = this.currentSelect.endRowIndex
       if (this.rows.length > 0 && startRowIndex > 0 && endRowIndex > 0 &&
-          this.rows.length > startRowIndex && this.rows.length > endRowIndex) {
+          this.rows.length >= startRowIndex && this.rows.length >= endRowIndex) {
         height = 0
         for (let i = startRowIndex; i <= endRowIndex; i++) {
           if (this.rows[i - 1].height) {
