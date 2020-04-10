@@ -33,7 +33,6 @@
         <div
           :style="`width: ${ cellWidth }px;
                    height: ${ cellHeight }px;`"
-          @click="() => { this.isOpenDatePicker = true }"
         >
         </div>
       </a-date-picker>
@@ -225,6 +224,9 @@ export default {
           this.editContentContext = this.$refs.editContent.getContext('2d')
         })
       }
+    },
+    'cell': function () {
+      this.isOpenDatePicker = false
     }
   },
   mounted () {
