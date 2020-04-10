@@ -1,8 +1,16 @@
 <template>
   <div id="lin-sheet">
+    <!-- 自定义层 -->
+    <slot
+      v-bind:columnTotalWidth="columnTotalWidth"
+      v-bind:rowTotalHeight="rowTotalHeight"
+      v-bind:scrollX="scrollX / canvasRatio"
+      v-bind:scrollY="scrollY / canvasRatio"
+    />
     <!-- 修改层 -->
     <edit-layer
       ref="EditLayer"
+      class="edit-layer"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :ratio="ratio"
       :browserRatio="browserRatio"
@@ -20,11 +28,12 @@
     <!-- 选择层 -->
     <div
       :id="tableKey"
-      class="edit-layer"
+      class="click-layer"
       @click="handleClickSheet"
     />
     <!-- 水平滚动条 -->
     <horizontal-scroll-bar
+      v-if="columnTotalWidth > sheetWidth * canvasRatio"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
@@ -34,6 +43,7 @@
     />
     <!-- 垂直滚动条 -->
     <vertical-scroll-bar
+      v-if="rowTotalHeight > sheetHeight * canvasRatio"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :rowHeaderHeight="rowHeaderHeight"
@@ -399,6 +409,9 @@ export default {
     addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
+    refresh () {
+      this.$refs.sheetLayer.refresh(true)
+    },
     // 处理表格滚动
     handleSheetScrollX (e) {
       if (this.isSelectCurrentSheet) {
@@ -567,16 +580,21 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
 }
 
-.edit-layer {
+.click-layer {
   z-index: 1;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  cursor: crosshair;
+}
+
+.edit-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 </style>

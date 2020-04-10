@@ -340,7 +340,7 @@ export default {
         }
       }
       this.cursor.x = startX
-      this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
+      this.cursor.y = (this.cellHeight / 2) - 9
       this.cursor.textIndex = textIndex
     },
     /**
@@ -390,7 +390,7 @@ export default {
       }
       this.cursor.textIndex = textIndex
       this.cursor.x = startX
-      this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
+      this.cursor.y = (this.cellHeight / 2) - 9
     },
     /**
      * 根据向量
@@ -424,7 +424,7 @@ export default {
         }
         this.cursor.textIndex = this.cursor.textIndex + vector
         this.cursor.x = startX
-        this.cursor.y = (this.cellHeight / 2) - (Number(this.cell.format.fontSize) * this.canvasRatio / 2)
+        this.cursor.y = (this.cellHeight / 2) - 9
       }
     },
     // 处理点击选择区域
@@ -564,9 +564,9 @@ export default {
             this.$emit('changeTableData', {
               columnIndex: this.currentSelect.startColumnIndex + c,
               rowIndex: this.currentSelect.startRowIndex + r,
-              type: 'content',
-              textIndex: this.cursor.textIndex,
-              data: cellValue
+              dataType: 'text',
+              data: cellValue,
+              cursorIndex: this.cursor.textIndex
             })
           }
         }
@@ -576,9 +576,9 @@ export default {
         this.$emit('changeTableData', {
           columnIndex: this.currentSelect.startColumnIndex,
           rowIndex: this.currentSelect.startRowIndex,
-          type: 'content',
-          textIndex: this.cursor.textIndex,
-          data: data
+          dataType: 'text',
+          data: data,
+          cursorIndex: this.cursor.textIndex
         })
       }
     },
