@@ -24,17 +24,13 @@
       />
       <a-date-picker
         v-if="cell.contentType === 'date'"
-        :open="isOpenDatePicker"
+        :open="currentSelect.isEditMode"
         placeholder="日期"
-        :value="$moment(cell.content)"
+        :value="cell.content ? $moment(cell.content) : null"
         :style="`z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
         @change="handleChangeDate"
       >
-        <div
-          :style="`width: ${ cellWidth }px;
-                   height: ${ cellHeight }px;`"
-        >
-        </div>
+        <span></span>
       </a-date-picker>
       <!-- 单元格文本内容 -->
       <canvas
@@ -145,8 +141,7 @@ export default {
       cellSelectionMap: [],
       contentWidth: 0, // 内容宽度
       scrollX: 0,
-      scrollY: 0,
-      isOpenDatePicker: false
+      scrollY: 0
     }
   },
   computed: {
@@ -224,9 +219,6 @@ export default {
           this.editContentContext = this.$refs.editContent.getContext('2d')
         })
       }
-    },
-    'cell': function () {
-      this.isOpenDatePicker = false
     }
   },
   mounted () {
@@ -475,8 +467,6 @@ export default {
           clickX: offsetX,
           clickY: offsetY
         })
-      } else if (this.cell.contentType === 'date') {
-        this.isOpenDatePicker = true
       }
     },
     // 粘贴
@@ -549,7 +539,6 @@ export default {
     },
     // 修改日期
     handleChangeDate (date, dateString) {
-      this.isOpenDatePicker = false
       // 修改单元格内容
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,

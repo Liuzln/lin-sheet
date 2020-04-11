@@ -408,11 +408,12 @@ export default {
                 textBaseline: cell.format.textBaseline
               })
             } else if (cell.contentType === 'date') {
+              const dateString = cell[this.customTableDataKey] ? moment(cell[this.customTableDataKey]).format('YYYY-MM-DD') : ''
               drawText({
                 ctx: ctx,
                 x: textX,
                 y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
-                content: moment(cell[this.customTableDataKey]).format('YYYY-MM-DD'),
+                content: dateString,
                 fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
                 fontFamily: cell.format.fontFamily,
                 fontColor: cell.format.fontColor,
