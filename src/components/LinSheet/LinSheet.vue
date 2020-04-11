@@ -491,6 +491,10 @@ export default {
       this.currentSelect.clickY = e.offsetY + (this.scrollY / this.canvasRatio)
       // 获取单元格坐标
       const cellLocation = this._getCellLocationByMousePos(this.currentSelect.clickX, this.currentSelect.clickY)
+      // 判断是否为点击出界
+      if (cellLocation[0] > this.tableData.length || cellLocation[1] > this.tableData[cellLocation[0] - 1].length) {
+        return
+      }
       let cell = this.tableData[cellLocation[0] - 1][cellLocation[1] - 1]
       // 判断点击的单元格是否为已合并的单元格
       if (cell.attr.columnSpan > 0 && cell.attr.rowSpan > 0) {
