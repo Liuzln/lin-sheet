@@ -29,6 +29,7 @@
         :value="cell.content ? $moment(cell.content) : null"
         :style="`z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
         @change="handleChangeDate"
+        style="position: absolute; top: 0; left: 0;"
       >
         <span></span>
       </a-date-picker>
@@ -443,7 +444,7 @@ export default {
     },
     // 处理点击选择区域
     handleClickEditSelection (event) {
-      console.log('handleClickCell')
+      console.log('handleClickEditSelection')
       if (this.cell.contentType === 'text') {
         let offsetX = 0
         let offsetY = 0
