@@ -133,7 +133,7 @@ export default {
       editContentContext: '',
       editLock: false, // 编辑锁 用于处理中文输入
       cursor: {
-        textIndex: 0, // 当前光标位置
+        cursonIndex: 0, // 当前光标位置
         x: 3,
         y: 3,
         height: 18
@@ -214,6 +214,14 @@ export default {
       if (this.currentSelect.startRowIndex > 0 && this.currentSelect.startColumnIndex > 0) {
         if (this.currentSelect.isEditMode) {
           this.handleClickEditSelection()
+        } else {
+          // 重置光标位置
+          this.cursor = {
+            cursonIndex: 0,
+            x: 3,
+            y: 3,
+            height: 18
+          }
         }
         this.$nextTick(() => {
           this.$refs.CellTextarea.focus()
@@ -346,17 +354,17 @@ export default {
         // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
         startX = cellWidth - this.contentWidth - 6
       }
-      let textIndex = 0
-      for (let len = this.cellSelectionMap.length; textIndex < len; textIndex++) {
+      let cursonIndex = 0
+      for (let len = this.cellSelectionMap.length; cursonIndex < len; cursonIndex++) {
         if (startX < clickX) {
-          startX += this.cellSelectionMap[textIndex]
+          startX += this.cellSelectionMap[cursonIndex]
         } else {
           break
         }
       }
       this.cursor.x = startX
       this.cursor.y = (this.cellHeight / 2) - 9
-      this.cursor.textIndex = textIndex
+      this.cursor.cursonIndex = cursonIndex
     },
     /**
      * 根据文字位置，更新光标位置
@@ -366,11 +374,11 @@ export default {
      * @param { Number } cellWidth - 单元格宽度
      * @param { Number } clickX - 点击位置X
      */
-    _updateCursorPosByTextIndex ({ ctx, textAlign, content, cellWidth, textIndex }) {
+    _updateCursorPosByCursonIndex ({ ctx, textAlign, content, cellWidth, cursonIndex }) {
       // console.log('ctx:', ctx)
       // console.log('content:', content)
       // console.log('cellWidth:', cellWidth)
-      // console.log('textIndex:', textIndex)
+      // console.log('cursonIndex:', cursonIndex)
       // 根据单元格内容生成选择Map
       this._generateCellSelectionMap({
         ctx: ctx,
@@ -397,13 +405,13 @@ export default {
       }
       // 查询光标X坐标
       for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
-        if (textIndex > i) {
+        if (cursonIndex > i) {
           startX += this.cellSelectionMap[i]
         } else {
           break
         }
       }
-      this.cursor.textIndex = textIndex
+      this.cursor.cursonIndex = cursonIndex
       this.cursor.x = startX
       this.cursor.y = (this.cellHeight / 2) - 9
     },
@@ -413,7 +421,7 @@ export default {
      */
     updateCursorPosByVector ({ vector }) {
       // 判断是否超出移动范围
-      if (this.cursor.textIndex + vector <= this.cellSelectionMap.length && this.cursor.textIndex + vector > -1) {
+      if (this.cursor.cursonIndex + vector <= this.cellSelectionMap.length && this.cursor.cursonIndex + vector > -1) {
         let startX = 0
         if (this.cell.format.textAlign === 'start' || this.cell.format.textAlign === 'left') {
           // 左对齐的文字：
@@ -431,13 +439,13 @@ export default {
         // 查询光标X坐标
         for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
           console.log(this.cellSelectionMap[i])
-          if (this.cursor.textIndex + vector > i) {
+          if (this.cursor.cursonIndex + vector > i) {
             startX += this.cellSelectionMap[i]
           } else {
             break
           }
         }
-        this.cursor.textIndex = this.cursor.textIndex + vector
+        this.cursor.cursonIndex = this.cursor.cursonIndex + vector
         this.cursor.x = startX
         this.cursor.y = (this.cellHeight / 2) - 9
       }
@@ -476,22 +484,25 @@ export default {
     handleCellPaste (e) {
       console.log('handleCellPaste')
       console.log('event:', e)
+      // 阻止浏览器默认事件 防止触发input事件
+      e.preventDefault()
       // 是否为IE浏览器
       const isIE = IEVersion() > -1
       // 现代浏览器 e.clipboardData
       // IE浏览器 window.clipboardData
       const clipboard = isIE ? window.clipboardData : e.clipboardData
       let clipboardData = void 0
-      console.log('clipboard:', clipboard)
-      console.log('clipboard.types:', clipboard.types)
-      console.log('clipboard.items:', clipboard.items)
-      for (const item of clipboard.items) {
-        console.log(item)
-      }
       if (isIE) {
         // IE浏览器只能用 Text 参数
+        // clipboard.types clipboard.items 为 Null
         clipboardData = clipboard.getData('Text')
       } else {
+        console.log('clipboard:', clipboard)
+        console.log('clipboard.types:', clipboard.types)
+        console.log('clipboard.items:', clipboard.items)
+        for (const item of clipboard.items) {
+          console.log(item)
+        }
         // 判断类型
         // 目前已知文件，text/html，text/plain
         // HTML
@@ -507,15 +518,26 @@ export default {
       console.log('handleCellInput')
       console.log(e)
       const inputType = e.inputType
-      const isInsert = inputType === 'insertText' // 是否为输入
-      // const isPaste = inputType === 'insertFromPaste' // 是否为黏贴
-      const inputValue = e.target.value
-      console.log('inputValue:', inputValue)
-      console.log('editLock', this.editLock)
-      if (!this.editLock) {
-        // 判断正常输入或黏贴行为
-        if (isInsert) {
-          // 输入模式
+      // 兼容无输入类型的浏览器
+      if (inputType) {
+        const isInsert = inputType === 'insertText' // 是否为输入
+        // const isPaste = inputType === 'insertFromPaste' // 是否为黏贴
+        const inputValue = e.target.value
+        console.log('inputValue:', inputValue)
+        console.log('editLock', this.editLock)
+        if (!this.editLock) {
+          // 判断正常输入或黏贴行为
+          if (isInsert) {
+            // 输入模式
+            // 修改单元格内容
+            this.handleChangeTableData(inputValue)
+          }
+        }
+      } else {
+        const inputValue = e.target.value
+        console.log('inputValue:', inputValue)
+        console.log('editLock', this.editLock)
+        if (!this.editLock) {
           // 修改单元格内容
           this.handleChangeTableData(inputValue)
         }
@@ -527,15 +549,15 @@ export default {
       this.$emit('deleteTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
-        cursorIndex: this.cursor.textIndex
+        cursorIndex: this.cursor.cursonIndex
       })
       // 更新光标位置
-      this._updateCursorPosByTextIndex({
+      this._updateCursorPosByCursonIndex({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
-        textIndex: this.cursor.textIndex - 1
+        cursonIndex: this.cursor.cursonIndex - 1
       })
     },
     // 修改日期
@@ -555,15 +577,15 @@ export default {
         rowIndex: this.currentSelect.startRowIndex,
         dataType: 'text',
         data: inputValue,
-        cursorIndex: this.cursor.textIndex
+        cursorIndex: this.cursor.cursonIndex
       })
       // 更新光标位置
-      this._updateCursorPosByTextIndex({
+      this._updateCursorPosByCursonIndex({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
-        textIndex: this.cursor.textIndex + inputValue.length
+        cursonIndex: this.cursor.cursonIndex + inputValue.length
       })
       // 清空富文本输入框
       this.$refs.CellTextarea.value = ''
@@ -593,7 +615,7 @@ export default {
               rowIndex: this.currentSelect.startRowIndex + r,
               dataType: 'text',
               data: cellValue,
-              cursorIndex: this.cursor.textIndex
+              cursorIndex: this.cursor.cursonIndex
             })
           }
         }
@@ -605,7 +627,7 @@ export default {
           rowIndex: this.currentSelect.startRowIndex,
           dataType: 'text',
           data: data,
-          cursorIndex: this.cursor.textIndex
+          cursorIndex: this.cursor.cursonIndex
         })
       }
     },

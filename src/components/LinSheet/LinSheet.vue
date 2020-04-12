@@ -409,8 +409,23 @@ export default {
     addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
+    // 刷新
     refresh () {
       this.$refs.sheetLayer.refresh(true)
+    },
+    // 清空当前选择
+    clearCurrentSelect () {
+      this.currentSelect = {
+        startColumnIndex: 0,
+        endColumnIndex: 0,
+        startRowIndex: 0,
+        endRowIndex: 0,
+        isEditMode: false,
+        cellX: 0,
+        cellY: 0,
+        clickX: 0,
+        clickY: 0
+      }
     },
     // 处理表格滚动
     handleSheetScrollX (e) {
@@ -575,9 +590,20 @@ export default {
       const cell = this.tableData[columnIndex - 1][rowIndex - 1]
       const content = cell[this.customTableDataKey]
       if (content.length > 0) {
-        cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+        // 若无光标位置，则全删除
+        if (cursorIndex) {
+          cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+        } else {
+          cell[this.customTableDataKey] = ''
+        }
       }
       this.$refs.sheetLayer.refresh(true)
+      const event = {
+        columnIndex: columnIndex,
+        rowIndex: rowIndex,
+        cursorIndex: cursorIndex
+      }
+      this.$emit('deleteTableData', event)
     }
   }
 }
