@@ -193,7 +193,8 @@ export default {
       scrollX: 0,
       scrollY: 0,
       sheetWidth: this.width,
-      sheetHeight: this.height
+      sheetHeight: this.height,
+      tabVector: 0
     }
   },
   computed: {
@@ -319,9 +320,43 @@ export default {
     }
     // 监听键盘按键
     addEventListener(window, 'keydown', (e) => {
-      // 回车键 进入单元格编辑模式
+      console.log(e)
+      // Tab键 向右切换单元格
+      if (e.code === 'Tab') {
+        if (this.currentSelect.startColumnIndex < this.columns.length) {
+          e.preventDefault()
+          // 选择单元格向右移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex + 1,
+            endColumnIndex: this.currentSelect.startColumnIndex + 1,
+            startRowIndex: this.currentSelect.startRowIndex,
+            endRowIndex: this.currentSelect.startRowIndex,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
+            cellY: this.currentSelect.cellY,
+            clickX: 0,
+            clickY: 0
+          }
+          this.tabVector += 1
+        }
+      }
+      // 回车键 向下切换单元格 并且会切换到按Tab键的那格下面
       if (e.code === 'Enter') {
-        this.currentSelect.isEditMode = true
+        if (this.currentSelect.startRowIndex - this.tabVector < this.rows.length) {
+          // 选择单元格向下移动
+          this.currentSelect = {
+            startColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
+            endColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
+            startRowIndex: this.currentSelect.startRowIndex + 1,
+            endRowIndex: this.currentSelect.startRowIndex + 1,
+            isEditMode: this.currentSelect.isEditMode,
+            cellX: this._getCellPosByCellLocation(this.currentSelect.startColumnIndex - this.tabVector, this.currentSelect.startRowIndex + 1)[0],
+            cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
+            clickX: 0,
+            clickY: 0
+          }
+          this.tabVector = 0
+        }
       }
       // 方向键 控制选择的单元格
       // 上
@@ -339,6 +374,7 @@ export default {
             clickX: 0,
             clickY: 0
           }
+          this.tabVector = 0
         }
       }
       // 右
@@ -350,7 +386,7 @@ export default {
             vector: 1
           })
         } else if (this.currentSelect.startColumnIndex < this.columns.length) {
-          // 选择单元格向上移动
+          // 选择单元格向右移动
           this.currentSelect = {
             startColumnIndex: this.currentSelect.startColumnIndex + 1,
             endColumnIndex: this.currentSelect.startColumnIndex + 1,
@@ -362,12 +398,13 @@ export default {
             clickX: 0,
             clickY: 0
           }
+          this.tabVector = 0
         }
       }
       // 下
       if (e.code === 'ArrowDown') {
         if (this.currentSelect.startRowIndex < this.rows.length) {
-          // 选择单元格向上移动
+          // 选择单元格向下移动
           this.currentSelect = {
             startColumnIndex: this.currentSelect.startColumnIndex,
             endColumnIndex: this.currentSelect.startColumnIndex,
@@ -379,6 +416,7 @@ export default {
             clickX: 0,
             clickY: 0
           }
+          this.tabVector = 0
         }
       }
       // 左
@@ -390,7 +428,7 @@ export default {
             vector: -1
           })
         } else if (this.currentSelect.startColumnIndex - 1 > 0) {
-          // 选择单元格向上移动
+          // 选择单元格向左移动
           this.currentSelect = {
             startColumnIndex: this.currentSelect.startColumnIndex - 1,
             endColumnIndex: this.currentSelect.startColumnIndex - 1,
@@ -402,6 +440,7 @@ export default {
             clickX: 0,
             clickY: 0
           }
+          this.tabVector = 0
         }
       }
     }, { passive: false })
