@@ -642,6 +642,10 @@ export default {
         endIndex = inputValue.indexOf('%0A', startIndex)
         isContainNextRow = endIndex > -1
       }
+      // 兼容最后无换行符
+      if (inputValue.substring(startIndex).length > 0) {
+        rows.push(inputValue.substring(startIndex))
+      }
       return rows
     },
     queryAllCell (row) {
