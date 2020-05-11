@@ -188,23 +188,19 @@ export default {
         this.drawColumnHeader(this.offScreenCanvasContext)
         this.drawRowHeader(this.offScreenCanvasContext)
         this.drawCell(this.offScreenCanvasContext)
-        // 清空画板
-        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
       }
     },
     // 绘制表格
     drawSheet () {
-      // 清空画板
-      // clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
       // 根据 scrollX scrollY 裁剪所需区域，绘制到画板上
       if (this.offScreenCanvas) {
-        setTimeout(() => {
-          this.sheetCanvasContext.drawImage(
-            this.offScreenCanvas,
-            this.scrollX, this.scrollY, this.canvasWidth, this.canvasHeight,
-            0, 0, this.canvasWidth, this.canvasHeight
-          )
-        }, 0)
+        // 清空画板
+        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
+        this.sheetCanvasContext.drawImage(
+          this.offScreenCanvas,
+          this.scrollX, this.scrollY, this.canvasWidth, this.canvasHeight,
+          0, 0, this.canvasWidth, this.canvasHeight
+        )
       }
     },
     // 处理表格滚动
