@@ -23,7 +23,7 @@
         :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
       />
       <a-date-picker
-        v-if="cell.contentType === 'date'"
+        v-if="cell.contentType === 'date' || cell.contentType === 'shortDate'"
         :open="currentSelect.isEditMode"
         placeholder="日期"
         :value="cell.content ? $moment(cell.content) : null"
@@ -333,12 +333,12 @@ export default {
       this._generateCellSelectionMap({
         ctx: ctx,
         textAlign: textAlign,
-        content: content
+        content: String(content)
       })
       // 文字宽度
       this.contentWidth = this._getTextWidth({
         ctx: ctx,
-        text: content
+        text: String(content)
       })
       let startX = 0
       if (textAlign === 'start' || textAlign === 'left') {
@@ -382,12 +382,12 @@ export default {
       // 根据单元格内容生成选择Map
       this._generateCellSelectionMap({
         ctx: ctx,
-        content: content
+        content: String(content)
       })
       // 文字宽度
       this.contentWidth = this._getTextWidth({
         ctx: ctx,
-        text: content
+        text: String(content)
       })
       let startX = 0
       if (textAlign === 'start' || textAlign === 'left') {
@@ -557,7 +557,7 @@ export default {
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
-        cursonIndex: this.cursor.cursonIndex - 1
+        cursonIndex: this.cursor.cursonIndex > 0 ? this.cursor.cursonIndex - 1 : 0
       })
     },
     // 修改日期

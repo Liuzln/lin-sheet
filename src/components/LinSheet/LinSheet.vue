@@ -2,6 +2,7 @@
   <div id="lin-sheet">
     <!-- 自定义层 -->
     <slot
+      name="customize-layer"
       v-bind:columnTotalWidth="columnTotalWidth"
       v-bind:rowTotalHeight="rowTotalHeight"
       v-bind:scrollX="scrollX / canvasRatio"
@@ -33,7 +34,7 @@
     />
     <!-- 水平滚动条 -->
     <horizontal-scroll-bar
-      v-if="columnTotalWidth > sheetWidth * canvasRatio"
+      v-if="columnTotalWidth > sheetWidth"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
@@ -43,7 +44,7 @@
     />
     <!-- 垂直滚动条 -->
     <vertical-scroll-bar
-      v-if="rowTotalHeight > sheetHeight * canvasRatio"
+      v-if="rowTotalHeight > sheetHeight"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :rowHeaderHeight="rowHeaderHeight"
@@ -168,6 +169,14 @@ export default {
       type: Number,
       required: true
     },
+    // 最大表格宽度
+    maxWidth: {
+      type: Number
+    },
+    // 最大表格高度
+    maxHeight: {
+      type: Number
+    },
     // 是否绑定缩放事件监听器
     isBindZoomEventListener: {
       type: Boolean,
@@ -192,8 +201,8 @@ export default {
       },
       scrollX: 0,
       scrollY: 0,
-      sheetWidth: this.width,
-      sheetHeight: this.height,
+      sheetWidth: 0,
+      sheetHeight: 0,
       tabVector: 0
     }
   },
@@ -240,6 +249,9 @@ export default {
     // 是否是选择当前表格
     isSelectCurrentSheet: function () {
       return this.currentSelectTableKey === this.tableKey
+    },
+    editLock: function () {
+      return this.$refs.EditLayer.editLock
     }
   },
   watch: {
@@ -265,6 +277,24 @@ export default {
     'ratio': function (newValue, oldValue) {
       this.currentSelect.cellX = this.currentSelect.cellX / oldValue * newValue
       this.currentSelect.cellY = this.currentSelect.cellY / oldValue * newValue
+    }
+  },
+  created () {
+    if (this.width) {
+      // 控制表格最大宽度
+      if (this.maxWidth && this.width > this.maxWidth) {
+        this.sheetWidth = this.maxWidth
+      } else {
+        this.sheetWidth = this.width
+      }
+    }
+    if (this.height) {
+      // 控制表格最大高度
+      if (this.maxHeight && this.height > this.maxHeight) {
+        this.sheetHeight = this.maxHeight
+      } else {
+        this.sheetHeight = this.height
+      }
     }
   },
   mounted () {
@@ -323,64 +353,70 @@ export default {
       console.log(e)
       // Tab键 向右切换单元格
       if (e.code === 'Tab') {
-        if (this.currentSelect.startColumnIndex < this.columns.length) {
-          e.preventDefault()
-          // 选择单元格向右移动
-          this.currentSelect = {
-            startColumnIndex: this.currentSelect.startColumnIndex + 1,
-            endColumnIndex: this.currentSelect.startColumnIndex + 1,
-            startRowIndex: this.currentSelect.startRowIndex,
-            endRowIndex: this.currentSelect.startRowIndex,
-            isEditMode: this.currentSelect.isEditMode,
-            cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
-            cellY: this.currentSelect.cellY,
-            clickX: 0,
-            clickY: 0
+        if (!this.editLock && !this.currentSelect.isEditMode) {
+          if (this.currentSelect.startColumnIndex < this.columns.length) {
+            e.preventDefault()
+            // 选择单元格向右移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex + 1,
+              endColumnIndex: this.currentSelect.startColumnIndex + 1,
+              startRowIndex: this.currentSelect.startRowIndex,
+              endRowIndex: this.currentSelect.startRowIndex,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX + this.columns[this.currentSelect.startColumnIndex].width,
+              cellY: this.currentSelect.cellY,
+              clickX: 0,
+              clickY: 0
+            }
+            this.tabVector += 1
           }
-          this.tabVector += 1
         }
       }
       // 回车键 向下切换单元格 并且会切换到按Tab键的那格下面
       if (e.code === 'Enter') {
-        if (this.currentSelect.startRowIndex - this.tabVector < this.rows.length) {
-          // 选择单元格向下移动
-          this.currentSelect = {
-            startColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
-            endColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
-            startRowIndex: this.currentSelect.startRowIndex + 1,
-            endRowIndex: this.currentSelect.startRowIndex + 1,
-            isEditMode: this.currentSelect.isEditMode,
-            cellX: this._getCellPosByCellLocation(this.currentSelect.startColumnIndex - this.tabVector, this.currentSelect.startRowIndex + 1)[0],
-            cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
-            clickX: 0,
-            clickY: 0
+        if (!this.editLock && !this.currentSelect.isEditMode) {
+          if (this.currentSelect.startRowIndex - this.tabVector < this.rows.length) {
+            // 选择单元格向下移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
+              endColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
+              startRowIndex: this.currentSelect.startRowIndex + 1,
+              endRowIndex: this.currentSelect.startRowIndex + 1,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this._getCellPosByCellLocation(this.currentSelect.startColumnIndex - this.tabVector, this.currentSelect.startRowIndex + 1)[0],
+              cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
+              clickX: 0,
+              clickY: 0
+            }
+            this.tabVector = 0
           }
-          this.tabVector = 0
         }
       }
       // 方向键 控制选择的单元格
       // 上
       if (e.code === 'ArrowUp') {
-        if (this.currentSelect.startRowIndex - 1 > 0) {
-          // 选择单元格向上移动
-          this.currentSelect = {
-            startColumnIndex: this.currentSelect.startColumnIndex,
-            endColumnIndex: this.currentSelect.startColumnIndex,
-            startRowIndex: this.currentSelect.startRowIndex - 1,
-            endRowIndex: this.currentSelect.startRowIndex - 1,
-            isEditMode: this.currentSelect.isEditMode,
-            cellX: this.currentSelect.cellX,
-            cellY: this.currentSelect.cellY - this.rows[this.currentSelect.startRowIndex].height,
-            clickX: 0,
-            clickY: 0
+        if (!this.editLock && !this.currentSelect.isEditMode) {
+          if (this.currentSelect.startRowIndex - 1 > 0) {
+            // 选择单元格向上移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex,
+              endColumnIndex: this.currentSelect.startColumnIndex,
+              startRowIndex: this.currentSelect.startRowIndex - 1,
+              endRowIndex: this.currentSelect.startRowIndex - 1,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX,
+              cellY: this.currentSelect.cellY - this.rows[this.currentSelect.startRowIndex].height,
+              clickX: 0,
+              clickY: 0
+            }
+            this.tabVector = 0
           }
-          this.tabVector = 0
         }
       }
       // 右
       if (e.code === 'ArrowRight') {
         // 判断是否为编辑状态
-        if (this.currentSelect.isEditMode) {
+        if (!this.editLock && this.currentSelect.isEditMode) {
           // 移动光标
           this.$refs.EditLayer.updateCursorPosByVector({
             vector: 1
@@ -403,26 +439,28 @@ export default {
       }
       // 下
       if (e.code === 'ArrowDown') {
-        if (this.currentSelect.startRowIndex < this.rows.length) {
-          // 选择单元格向下移动
-          this.currentSelect = {
-            startColumnIndex: this.currentSelect.startColumnIndex,
-            endColumnIndex: this.currentSelect.startColumnIndex,
-            startRowIndex: this.currentSelect.startRowIndex + 1,
-            endRowIndex: this.currentSelect.startRowIndex + 1,
-            isEditMode: this.currentSelect.isEditMode,
-            cellX: this.currentSelect.cellX,
-            cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
-            clickX: 0,
-            clickY: 0
+        if (!this.editLock && !this.currentSelect.isEditMode) {
+          if (this.currentSelect.startRowIndex < this.rows.length) {
+            // 选择单元格向下移动
+            this.currentSelect = {
+              startColumnIndex: this.currentSelect.startColumnIndex,
+              endColumnIndex: this.currentSelect.startColumnIndex,
+              startRowIndex: this.currentSelect.startRowIndex + 1,
+              endRowIndex: this.currentSelect.startRowIndex + 1,
+              isEditMode: this.currentSelect.isEditMode,
+              cellX: this.currentSelect.cellX,
+              cellY: this.currentSelect.cellY + this.rows[this.currentSelect.startRowIndex].height,
+              clickX: 0,
+              clickY: 0
+            }
+            this.tabVector = 0
           }
-          this.tabVector = 0
         }
       }
       // 左
       if (e.code === 'ArrowLeft') {
         // 判断是否为编辑状态
-        if (this.currentSelect.isEditMode) {
+        if (!this.editLock && this.currentSelect.isEditMode) {
           // 移动光标
           this.$refs.EditLayer.updateCursorPosByVector({
             vector: -1
@@ -600,7 +638,7 @@ export default {
       if (dataType === 'text') {
         console.log(data)
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
-        const content = cell[this.customTableDataKey]
+        const content = String(cell[this.customTableDataKey])
         if (content.length > 0) {
           cell[this.customTableDataKey] = content.slice(0, cursorIndex) + data + content.slice(cursorIndex)
         } else {
@@ -627,19 +665,28 @@ export default {
       console.log(columnIndex)
       console.log(rowIndex)
       const cell = this.tableData[columnIndex - 1][rowIndex - 1]
-      const content = cell[this.customTableDataKey]
-      if (content.length > 0) {
-        // 若无光标位置，则全删除
-        if (cursorIndex) {
-          cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
-        } else {
-          cell[this.customTableDataKey] = ''
+      // 判断删除内容类型
+      if (cell.contentType === 'text') {
+        const content = String(cell[this.customTableDataKey])
+        if (content.length > 0) {
+          // 若无光标位置，则全删除
+          if (cursorIndex) {
+            cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+          } else {
+            cell[this.customTableDataKey] = ''
+          }
         }
+      } else if (cell.contentType === 'date') {
+        cell[this.customTableDataKey] = ''
+      } else {
+        cell[this.customTableDataKey] = ''
       }
       this.$refs.sheetLayer.refresh(true)
       const event = {
         columnIndex: columnIndex,
         rowIndex: rowIndex,
+        dataType: cell.contentType,
+        data: cell[this.customTableDataKey],
         cursorIndex: cursorIndex
       }
       this.$emit('deleteTableData', event)

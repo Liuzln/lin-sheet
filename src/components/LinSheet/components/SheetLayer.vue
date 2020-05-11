@@ -13,7 +13,7 @@ import moment from 'moment'
 import { evaluate } from '@/utils/math'
 import {
   drawVerticalLine, drawHorizontalLine,
-  drawFillRect, drawText
+  drawFillRect, drawText, clearContext
 } from '@/utils/canvas'
 import { getColumnsName } from '@/utils/sheet'
 import { addEventListener } from '@/utils/event'
@@ -188,6 +188,8 @@ export default {
         this.drawColumnHeader(this.offScreenCanvasContext)
         this.drawRowHeader(this.offScreenCanvasContext)
         this.drawCell(this.offScreenCanvasContext)
+        // 清空画板
+        clearContext(this.sheetCanvasContext, this.canvasWidth, this.canvasHeight)
       }
     },
     // 绘制表格
@@ -409,6 +411,19 @@ export default {
               })
             } else if (cell.contentType === 'date') {
               const dateString = cell[this.customTableDataKey] ? moment(cell[this.customTableDataKey]).format('YYYY-MM-DD') : ''
+              drawText({
+                ctx: ctx,
+                x: textX,
+                y: (startY + (drawHeight * 0.5)) * this.canvasRatio,
+                content: dateString,
+                fontSize: `${cell.format.fontSize * this.canvasRatio}px`,
+                fontFamily: cell.format.fontFamily,
+                fontColor: cell.format.fontColor,
+                textAlign: cell.format.textAlign,
+                textBaseline: cell.format.textBaseline
+              })
+            } else if (cell.contentType === 'shortDate') {
+              const dateString = cell[this.customTableDataKey] ? moment(cell[this.customTableDataKey]).format('MM-DD') : ''
               drawText({
                 ctx: ctx,
                 x: textX,
