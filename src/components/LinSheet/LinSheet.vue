@@ -249,9 +249,6 @@ export default {
     // 是否是选择当前表格
     isSelectCurrentSheet: function () {
       return this.currentSelectTableKey === this.tableKey
-    },
-    editLock: function () {
-      return this.$refs.EditLayer.editLock
     }
   },
   watch: {
@@ -353,7 +350,7 @@ export default {
       console.log(e)
       // Tab键 向右切换单元格
       if (e.code === 'Tab') {
-        if (!this.editLock && !this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && !this.currentSelect.isEditMode) {
           if (this.currentSelect.startColumnIndex < this.columns.length) {
             e.preventDefault()
             // 选择单元格向右移动
@@ -374,8 +371,9 @@ export default {
       }
       // 回车键 向下切换单元格 并且会切换到按Tab键的那格下面
       if (e.code === 'Enter') {
-        if (!this.editLock && !this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && !this.currentSelect.isEditMode) {
           if (this.currentSelect.startRowIndex - this.tabVector < this.rows.length) {
+            e.preventDefault()
             // 选择单元格向下移动
             this.currentSelect = {
               startColumnIndex: this.currentSelect.startColumnIndex - this.tabVector,
@@ -395,7 +393,7 @@ export default {
       // 方向键 控制选择的单元格
       // 上
       if (e.code === 'ArrowUp') {
-        if (!this.editLock && !this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && !this.currentSelect.isEditMode) {
           if (this.currentSelect.startRowIndex - 1 > 0) {
             // 选择单元格向上移动
             this.currentSelect = {
@@ -416,7 +414,7 @@ export default {
       // 右
       if (e.code === 'ArrowRight') {
         // 判断是否为编辑状态
-        if (!this.editLock && this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && this.currentSelect.isEditMode) {
           // 移动光标
           this.$refs.EditLayer.updateCursorPosByVector({
             vector: 1
@@ -439,7 +437,7 @@ export default {
       }
       // 下
       if (e.code === 'ArrowDown') {
-        if (!this.editLock && !this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && !this.currentSelect.isEditMode) {
           if (this.currentSelect.startRowIndex < this.rows.length) {
             // 选择单元格向下移动
             this.currentSelect = {
@@ -460,7 +458,7 @@ export default {
       // 左
       if (e.code === 'ArrowLeft') {
         // 判断是否为编辑状态
-        if (!this.editLock && this.currentSelect.isEditMode) {
+        if (!this.getEditLock() && this.currentSelect.isEditMode) {
           // 移动光标
           this.$refs.EditLayer.updateCursorPosByVector({
             vector: -1
@@ -486,6 +484,9 @@ export default {
     addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
+    getEditLock () {
+      return this.$refs.EditLayer.editLock
+    },
     // 刷新
     refresh () {
       this.$refs.sheetLayer.refresh(true)
@@ -518,8 +519,8 @@ export default {
     },
     // 处理窗口大小变化
     handleTableDataChange () {
-      this.sheetWidth = this.width
-      this.sheetHeight = this.height
+      this.sheetWidth = this.width || 0
+      this.sheetHeight = this.height || 0
       this.$refs.sheetLayer.refresh()
     },
     // 根据鼠标点击坐标获取单元格位置
@@ -647,6 +648,7 @@ export default {
       } else if (dataType === 'date') {
         // 日期类型
         console.log(data)
+        this.currentSelect.isEditMode = false
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         cell[this.customTableDataKey] = data
       }
@@ -664,6 +666,7 @@ export default {
     handleDeleteTableData ({ columnIndex, rowIndex, cursorIndex }) {
       console.log(columnIndex)
       console.log(rowIndex)
+      console.log(cursorIndex)
       const cell = this.tableData[columnIndex - 1][rowIndex - 1]
       // 判断删除内容类型
       if (cell.contentType === 'text') {
