@@ -634,16 +634,21 @@ export default {
      * @param { Number } dataType 内容类型
      * @param { Number } data 修改数据
      * @param { Number } cursorIndex 光标位置
+     * @param { Boolean } isCover 是否覆盖
      */
-    handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex }) {
+    handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex, isCover = false }) {
       if (dataType === 'text') {
         console.log(data)
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         const content = String(cell[this.customTableDataKey])
-        if (content.length > 0) {
-          cell[this.customTableDataKey] = content.slice(0, cursorIndex) + data + content.slice(cursorIndex)
+        if (isCover) {
+          cell[this.customTableDataKey] = data
         } else {
-          cell[this.customTableDataKey] += data
+          if (content.length > 0) {
+            cell[this.customTableDataKey] = content.slice(0, cursorIndex) + data + content.slice(cursorIndex)
+          } else {
+            cell[this.customTableDataKey] += data
+          }
         }
       } else if (dataType === 'date') {
         // 日期类型
@@ -658,7 +663,8 @@ export default {
         rowIndex: rowIndex,
         dataType: dataType,
         data: data,
-        cursorIndex: cursorIndex
+        cursorIndex: cursorIndex,
+        isCover: isCover
       }
       this.$emit('changeTableData', event)
     },
@@ -680,8 +686,6 @@ export default {
           }
         }
       } else if (cell.contentType === 'date') {
-        cell[this.customTableDataKey] = ''
-      } else {
         cell[this.customTableDataKey] = ''
       }
       this.$refs.sheetLayer.refresh(true)

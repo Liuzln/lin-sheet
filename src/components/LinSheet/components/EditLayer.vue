@@ -142,7 +142,8 @@ export default {
       cellSelectionMap: [],
       contentWidth: 0, // 内容宽度
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      inputCount: 0 // 输入次数
     }
   },
   computed: {
@@ -222,6 +223,7 @@ export default {
             y: 3,
             height: 18
           }
+          this.inputCount = 0
         }
         this.$nextTick(() => {
           this.$refs.CellTextarea.focus()
@@ -531,6 +533,7 @@ export default {
             // 输入模式
             // 修改单元格内容
             this.handleChangeTableData(inputValue)
+            this.inputCount += 1
           }
         }
       } else {
@@ -540,6 +543,7 @@ export default {
         if (!this.editLock) {
           // 修改单元格内容
           this.handleChangeTableData(inputValue)
+          this.inputCount += 1
         }
       }
     },
@@ -572,12 +576,18 @@ export default {
     },
     // 修改表格数据
     handleChangeTableData (inputValue) {
+      console.log('inputCount:', this.inputCount)
+      let isCover = false
+      if (!this.currentSelect.isEditMode && this.inputCount === 0 || this.inputCount === 0) {
+        isCover = true
+      }
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
         dataType: 'text',
         data: inputValue,
-        cursorIndex: this.cursor.cursonIndex
+        cursorIndex: this.cursor.cursonIndex,
+        isCover: isCover
       })
       // 更新光标位置
       this._updateCursorPosByCursonIndex({
@@ -615,7 +625,8 @@ export default {
               rowIndex: this.currentSelect.startRowIndex + r,
               dataType: 'text',
               data: cellValue,
-              cursorIndex: this.cursor.cursonIndex
+              cursorIndex: this.cursor.cursonIndex,
+              isCover: true
             })
           }
         }
@@ -627,7 +638,8 @@ export default {
           rowIndex: this.currentSelect.startRowIndex,
           dataType: 'text',
           data: data,
-          cursorIndex: this.cursor.cursonIndex
+          cursorIndex: this.cursor.cursonIndex,
+          isCover: true
         })
       }
     },
