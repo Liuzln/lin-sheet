@@ -61,6 +61,16 @@ export default {
       type: Array,
       required: true
     },
+    // 是否显示行名称
+    isVisibleRowHeader: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示列名称
+    isVisibleColumnHeader: {
+      type: Boolean,
+      default: true
+    },
     // 是否使用自定义行名称
     isCustomRowName: {
       type: Boolean,
@@ -185,8 +195,12 @@ export default {
         this.offScreenCanvas.height = this.rowTotalHeight * this.canvasRatio + 1
         this.offScreenCanvasContext = this.offScreenCanvas.getContext('2d')
         // 绘制所需内容
-        this.drawColumnHeader(this.offScreenCanvasContext)
-        this.drawRowHeader(this.offScreenCanvasContext)
+        if (this.isVisibleColumnHeader) {
+          this.drawColumnHeader(this.offScreenCanvasContext)
+        }
+        if (this.isVisibleRowHeader) {
+          this.drawRowHeader(this.offScreenCanvasContext)
+        }
         this.drawCell(this.offScreenCanvasContext)
       }
     },
@@ -336,8 +350,8 @@ export default {
     },
     // 绘制单元格
     async drawCell (ctx) {
-      let startX = this.columnStartWidth
-      let startY = this.rowHeaderHeight
+      let startX = this.isVisibleColumnHeader ? this.columnStartWidth : 0
+      let startY = this.isVisibleRowHeader ? this.rowHeaderHeight : 0
       for (let columnIndex = 0, len1 = this.tableData.length; columnIndex < len1; columnIndex++) {
         const column = this.tableData[columnIndex]
         const columnWidth = this.columns[columnIndex].width
@@ -365,6 +379,26 @@ export default {
               height: drawHeight * this.canvasRatio,
               color: 'RGB(255, 255, 255)'
             })
+            // 如果是第一行，则绘制上边框
+            if (rowIndex === 0) {
+              drawHorizontalLine({
+                ctx: ctx,
+                startX: startX * this.canvasRatio,
+                startY: startY * this.canvasRatio,
+                length: drawWidth * this.canvasRatio,
+                color: 'RGB(215, 218, 222)'
+              })
+            }
+            // 如果是第一列，则绘制做边框
+            if (columnIndex === 0) {
+              drawVerticalLine({
+                ctx: ctx,
+                startX: startX * this.canvasRatio,
+                startY: startY * this.canvasRatio,
+                length: drawHeight * this.canvasRatio,
+                color: 'RGB(215, 218, 222)'
+              })
+            }
             // 绘制右边框
             drawVerticalLine({
               ctx: ctx,
@@ -435,7 +469,7 @@ export default {
           }
           startY = startY + rowHeight
         }
-        startY = this.rowHeaderHeight
+        startY = this.isVisibleRowHeader ? this.rowHeaderHeight : 0
         startX = startX + columnWidth
       }
     }

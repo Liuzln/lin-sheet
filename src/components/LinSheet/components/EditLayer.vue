@@ -92,6 +92,16 @@ export default {
       type: Number,
       required: true
     },
+    // 是否显示行名称
+    isVisibleRowHeader: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示列名称
+    isVisibleColumnHeader: {
+      type: Boolean,
+      default: true
+    },
     // 行
     rows: {
       type: Array,
@@ -150,7 +160,7 @@ export default {
     // 单元格宽度
     cellWidth: function () {
       // 默认列开始宽度
-      let width = this.columnStartWidth
+      let width = this.isVisibleColumnHeader ? this.columnStartWidth : 0
       const startColumnIndex = this.currentSelect.startColumnIndex
       const endColumnIndex = this.currentSelect.endColumnIndex
       if (this.columns.length > 0 && startColumnIndex > 0 && endColumnIndex > 0 &&
@@ -167,7 +177,7 @@ export default {
     // 单元格高度
     cellHeight: function () {
       // 默认行头部高度
-      let height = this.rowHeaderHeight
+      let height = this.isVisibleRowHeader ? this.rowHeaderHeight : 0
       const startRowIndex = this.currentSelect.startRowIndex
       const endRowIndex = this.currentSelect.endRowIndex
       if (this.rows.length > 0 && startRowIndex > 0 && endRowIndex > 0 &&
@@ -533,7 +543,6 @@ export default {
             // 输入模式
             // 修改单元格内容
             this.handleChangeTableData(inputValue)
-            this.inputCount += 1
           }
         }
       } else {
@@ -543,7 +552,6 @@ export default {
         if (!this.editLock) {
           // 修改单元格内容
           this.handleChangeTableData(inputValue)
-          this.inputCount += 1
         }
       }
     },
@@ -576,11 +584,11 @@ export default {
     },
     // 修改表格数据
     handleChangeTableData (inputValue) {
-      console.log('inputCount:', this.inputCount)
       let isCover = false
       if (!this.currentSelect.isEditMode && this.inputCount === 0 || this.inputCount === 0) {
         isCover = true
       }
+      this.inputCount += 1
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
@@ -608,6 +616,7 @@ export default {
     */
     parsePasteText (data) {
       const escapeInputValue = escape(data)
+      const emitData = []
       if (escapeInputValue.indexOf('%09') > -1 || escapeInputValue.indexOf('%0A') > -1) {
         const rows = this.queryAllRow(escapeInputValue)
         // 遍历每一行
@@ -619,8 +628,7 @@ export default {
           for (let c = 0, len2 = cells.length; c < len2; c++) {
             const cell = cells[c]
             const cellValue = unescape(cell)
-            console.log(cellValue)
-            this.$emit('changeTableData', {
+            emitData.push({
               columnIndex: this.currentSelect.startColumnIndex + c,
               rowIndex: this.currentSelect.startRowIndex + r,
               dataType: 'text',
@@ -630,17 +638,18 @@ export default {
             })
           }
         }
+        this.$emit('pasteTableData', emitData)
       } else {
-        // 输入模型
+        // 输入模式
         // 修改单元格内容
-        this.$emit('changeTableData', {
+        this.$emit('pasteTableData', [{
           columnIndex: this.currentSelect.startColumnIndex,
           rowIndex: this.currentSelect.startRowIndex,
           dataType: 'text',
           data: data,
           cursorIndex: this.cursor.cursonIndex,
           isCover: true
-        })
+        }])
       }
     },
     queryAllRow (inputValue) {

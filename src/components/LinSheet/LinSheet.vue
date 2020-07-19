@@ -16,6 +16,8 @@
       :ratio="ratio"
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
+      :isVisibleRowHeader="isVisibleRowHeader"
+      :isVisibleColumnHeader="isVisibleColumnHeader"
       :rows="rows"
       :columns="columns"
       :tableData="tableData"
@@ -24,6 +26,7 @@
       :customTableDataKey="customTableDataKey"
       :currentSelect="currentSelect"
       @changeTableData="handleChangeTableData"
+      @pasteTableData="handlePasteTableData"
       @deleteTableData="handleDeleteTableData"
     />
     <!-- 选择层 -->
@@ -63,6 +66,8 @@
       :browserRatio="browserRatio"
       :canvasRatio="canvasRatio"
       :ratio="ratio"
+      :isVisibleRowHeader="isVisibleRowHeader"
+      :isVisibleColumnHeader="isVisibleColumnHeader"
       :columnStartWidth="columnStartWidth"
       :rowHeaderHeight="rowHeaderHeight"
       :rows="rows"
@@ -108,6 +113,16 @@ export default {
     tableKey: {
       type: String,
       default: uuidv1()
+    },
+    // 是否显示行名称
+    isVisibleRowHeader: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示列名称
+    isVisibleColumnHeader: {
+      type: Boolean,
+      default: true
     },
     // 行头部高度
     rowHeaderHeight: {
@@ -194,8 +209,8 @@ export default {
         startRowIndex: 1, // 行开始索引 单选时用的坐标
         endRowIndex: 1, // 行结束索引 多选时用的坐标
         isEditMode: false, // 单元格编辑模式
-        cellX: this.columnStartWidth, // 单元格左上角位置X轴
-        cellY: this.rowHeaderHeight, // 单元格左上角位置Y轴
+        cellX: this.isVisibleColumnHeader ? this.columnStartWidth : 0, // 单元格左上角位置X轴
+        cellY: this.isVisibleRowHeader ? this.rowHeaderHeight : 0, // 单元格左上角位置Y轴
         clickX: 0, // 鼠标点击位置
         clickY: 0 // 鼠标点击位置
       },
@@ -230,7 +245,7 @@ export default {
     },
     // 列总宽度
     columnTotalWidth: function () {
-      let totalWidth = this.columnStartWidth
+      let totalWidth = this.isVisibleColumnHeader ? this.columnStartWidth : 0
       for (let i = 0, len = this.columns.length; i < len; i++) {
         const column = this.columns[i]
         totalWidth += column.width
@@ -239,7 +254,7 @@ export default {
     },
     // 行总高度
     rowTotalHeight: function () {
-      let totalHeight = this.rowHeaderHeight
+      let totalHeight = this.isVisibleRowHeader ? this.rowHeaderHeight : 0
       for (let i = 0, len = this.rows.length; i < len; i++) {
         const row = this.rows[i]
         totalHeight += row.height
@@ -299,55 +314,88 @@ export default {
     // 判断是否监听缩放事件
     if (this.isBindZoomEventListener) {
       // Ctrl+鼠标滚轮缩放
-      addEventListener(window, 'mousewheel', (e) => {
-        console.log(e)
-        // 监测滚轮事件中是否按下了Ctrl键
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault()
-          // 滚轮下滚
-          if (e.delta < 0) {
-            if (this.ratio > 0.5) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
-            }
-          }
-          // 滚轮上滚
-          if (e.delta > 0) {
-            if (this.ratio < 3) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
-            }
-          }
-        }
-      }, { passive: false })
+      addEventListener(window, 'mousewheel', this.handleZoomMousewheel, { passive: false })
       // 监听键盘按键
-      addEventListener(window, 'keydown', (e) => {
-        // 键盘快捷键缩放
-        // 按下Ctrl 以及以下任意一键：+ - 或 0
-        if (e.ctrlKey) {
-          // Ctrl +
-          if (e.code === 'Equal') {
-            e.preventDefault()
-            if (this.ratio < 3) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
-            }
-          }
-          // Ctrl -
-          if (e.code === 'Minus') {
-            e.preventDefault()
-            if (this.ratio > 0.5) {
-              this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
-            }
-          }
-          // Ctrl 0
-          if (e.code === 'Digit0') {
-            e.preventDefault()
-            this.canvasRatio = this.browserRatio
-          }
-        }
-      })
+      addEventListener(window, 'keydown', this.handleZoomKeydown)
     }
     // 监听键盘按键
-    addEventListener(window, 'keydown', (e) => {
+    addEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
+    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+    window.addEventListener('keydown', this.handleBackspaceKeyDown)
+  },
+  beforeDestroy () {
+    console.log('beforeDestroy')
+    this.clearEventListener()
+  },
+  methods: {
+    // 清空事件监听
+    clearEventListener () {
+      if (this.isBindZoomEventListener) {
+        removeEventListener(window, 'mousewheel', this.handleZoomMousewheel, { passive: false })
+        removeEventListener(window, 'keydown', this.handleZoomKeydown)
+      }
+      removeEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
+      removeEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+      removeEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+      window.removeEventListener('keydown', this.handleBackspaceKeyDown)
+    },
+    handleBackspaceKeyDown (e) {
+      // 退格键 屏蔽国产浏览器的退格键返回上一页功能
+      if (e.code === 'Backspace') {
+        e.preventDefault()
+      }
+    },
+    handleZoomMousewheel (e) {
       console.log(e)
+      // 监测滚轮事件中是否按下了Ctrl键
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        // 滚轮下滚
+        if (e.delta < 0) {
+          if (this.ratio > 0.5) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+          }
+        }
+        // 滚轮上滚
+        if (e.delta > 0) {
+          if (this.ratio < 3) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+          }
+        }
+      }
+    },
+    handleZoomKeydown (e) {
+      // 键盘快捷键缩放
+      // 按下Ctrl 以及以下任意一键：+ - 或 0
+      if (e.ctrlKey) {
+        // Ctrl +
+        if (e.code === 'Equal') {
+          e.preventDefault()
+          if (this.ratio < 3) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} + 0.2`)
+          }
+        }
+        // Ctrl -
+        if (e.code === 'Minus') {
+          e.preventDefault()
+          if (this.ratio > 0.5) {
+            this.canvasRatio = evaluate(`${this.canvasRatio} - 0.2`)
+          }
+        }
+        // Ctrl 0
+        if (e.code === 'Digit0') {
+          e.preventDefault()
+          this.canvasRatio = this.browserRatio
+        }
+      }
+    },
+    handleSheetKeydown (e) {
+      console.log(e)
+      // // 退格键 屏蔽国产浏览器的退格键返回上一页功能
+      // if (e.code === 'Backspace') {
+      //   e.preventDefault()
+      // }
       // Tab键 向右切换单元格
       if (e.code === 'Tab') {
         if (!this.getEditLock() && !this.currentSelect.isEditMode) {
@@ -479,11 +527,7 @@ export default {
           this.tabVector = 0
         }
       }
-    }, { passive: false })
-    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
-    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
-  },
-  methods: {
+    },
     getEditLock () {
       return this.$refs.EditLayer.editLock
     },
@@ -530,7 +574,9 @@ export default {
       for (let len = this.columns.length; columnIndex <= len; columnIndex++) {
         let columnWidth = 0
         if (columnIndex === 0) {
-          columnWidth = this.columnStartWidth * this.ratio
+          if (this.isVisibleColumnHeader) {
+            columnWidth = this.columnStartWidth * this.ratio
+          }
         } else {
           columnWidth = this.columns[columnIndex - 1].width * this.ratio
         }
@@ -544,7 +590,9 @@ export default {
       for (let len = this.rows.length; rowIndex <= len; rowIndex++) {
         let rowHeight = 0
         if (rowIndex === 0) {
-          rowHeight = this.rowHeaderHeight * this.ratio
+          if (this.isVisibleRowHeader) {
+            rowHeight = this.rowHeaderHeight * this.ratio
+          }
         } else {
           rowHeight = this.rows[rowIndex - 1].height * this.ratio
         }
@@ -562,7 +610,9 @@ export default {
       // 获取单元格X坐标
       for (let i = 0; i < x; i++) {
         if (i === 0) {
-          cellX = this.columnStartWidth * this.ratio
+          if (this.isVisibleColumnHeader) {
+            cellX = this.columnStartWidth * this.ratio
+          }
         } else {
           cellX += this.columns[i - 1].width * this.ratio
         }
@@ -570,7 +620,9 @@ export default {
       // 获取单元格Y坐标
       for (let i = 0; i < y; i++) {
         if (i === 0) {
-          cellY = this.rowHeaderHeight * this.ratio
+          if (this.isVisibleRowHeader) {
+            cellY = this.rowHeaderHeight * this.ratio
+          }
         } else {
           cellY += this.rows[i - 1].height * this.ratio
         }
@@ -667,6 +719,38 @@ export default {
         isCover: isCover
       }
       this.$emit('changeTableData', event)
+    },
+    handlePasteTableData (pasteData) {
+      console.log('LinSheet:handlePasteTableData')
+      for (const item of pasteData) {
+        console.log('item:', item)
+        if (item.dataType === 'text') {
+          if (item.columnIndex < this.tableData.length) {
+            const cell = this.tableData[item.columnIndex - 1][item.rowIndex - 1]
+            if (cell) {
+              const content = String(cell[this.customTableDataKey])
+              if (item.isCover) {
+                cell[this.customTableDataKey] = item.data
+              } else {
+                if (content.length > 0) {
+                  cell[this.customTableDataKey] = content.slice(0, item.cursorIndex) + item.data + content.slice(item.cursorIndex)
+                } else {
+                  cell[this.customTableDataKey] += item.data
+                }
+              }
+            }
+          }
+        } else if (item.dataType === 'date') {
+          // 日期类型
+          this.currentSelect.isEditMode = false
+          const cell = this.tableData[item.columnIndex - 1][item.rowIndex - 1]
+          if (cell) {
+            cell[this.customTableDataKey] = item.data
+          }
+        }
+      }
+      this.$refs.sheetLayer.refresh(true)
+      this.$emit('pasteTableData', pasteData)
     },
     // 处理删除表格数据
     handleDeleteTableData ({ columnIndex, rowIndex, cursorIndex }) {
