@@ -585,7 +585,7 @@ export default {
     // 修改表格数据
     handleChangeTableData (inputValue) {
       let isCover = false
-      if (!this.currentSelect.isEditMode && this.inputCount === 0 || this.inputCount === 0) {
+      if ((!this.currentSelect.isEditMode && this.inputCount === 0) || this.inputCount === 0) {
         isCover = true
       }
       this.inputCount += 1
