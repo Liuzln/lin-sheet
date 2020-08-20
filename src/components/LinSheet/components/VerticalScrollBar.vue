@@ -78,7 +78,15 @@ export default {
     this.$refs.VerticalScrollBar.addEventListener('ondragover', (e) => {
       e.preventDefault()
     })
-    addEventListener(window, 'mousemove', (e) => {
+  },
+  methods: {
+    initEventListener () {
+      addEventListener(window, 'mousemove', this.handleMouseMove)
+      addEventListener(window, 'mouseup', this.handleMouseUp)
+      // Ctrl+鼠标滚轮缩放
+      addEventListener(window, 'mousewheel', this.handleMouseWheel)
+    },
+    handleMouseMove (e) {
       const canOffsetValue = this.windowHeight - 32 - this.thumbHeight - (this.rowHeaderHeight * this.ratio) - 16
       const visibleHeight = this.windowHeight - 16
       if (this.lock === false) {
@@ -106,14 +114,12 @@ export default {
           }
         }))
       }
-    })
-    addEventListener(window, 'mouseup', (e) => {
+    },
+    handleMouseUp (e) {
       this.lock = true
-    })
-    // Ctrl+鼠标滚轮缩放
-    addEventListener(window, 'mousewheel', (e) => {
+    },
+    handleMouseWheel (e) {
       if (!e.shiftKey && this.isSelectCurrentSheet && !e.ctrlKey) {
-        console.log(e.delta)
         const stepHeight = -25 * e.delta
         const canOffsetValue = this.windowHeight - 32 - this.thumbHeight - (this.rowHeaderHeight * this.ratio) - 16
         const visibleHeight = this.windowHeight - 16
@@ -125,9 +131,9 @@ export default {
         }
         // 移动量
         let movementY = (stepHeight / this.canvasRatio) * this.ratio
-        if (this.scrollY + stepHeight < 0) {
+        if (this.scrollY + stepHeight <= 0) {
           movementY = -this.scrollY
-        } else if (this.scrollY + stepHeight > canOffsetValue) {
+        } else if (this.scrollY + stepHeight >= canOffsetValue) {
           movementY = canOffsetValue - this.scrollY
         }
         this.scrollY += movementY
@@ -140,9 +146,7 @@ export default {
           }
         }))
       }
-    })
-  },
-  methods: {
+    }
   }
 }
 </script>

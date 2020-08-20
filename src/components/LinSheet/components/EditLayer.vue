@@ -12,10 +12,12 @@
         v-show="cell.contentType === 'text'"
         ref="editSelection"
         class="edit-selection"
+        :width="cellWidth"
+        :height="cellHeight"
         :style="`width: ${ cellWidth }px;
                  height: ${ cellHeight }px;
-                 z-index: ${ currentSelect.isEditMode ? 3 : 0 };`"
-        @click="handleClickEditSelection"
+                 z-index: ${ currentSelect.isEditMode ? 4 : 0 };
+                 opacity: ${ selection.xAxisVector !== 0 ? 1 : 0 };`"
       />
       <!-- 选择框 -->
       <div
@@ -41,11 +43,11 @@
       />
       <!-- 光标效果 -->
       <div
-        v-show="cell.contentType === 'text'"
+        v-show="cell.contentType === 'text' && selection.xAxisVector === 0"
         class="edit-cursor"
         :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px;
-                 left: ${ cursor.x }px;
-                 top: ${ cursor.y }px;
+                 left: ${ cursor.posX }px;
+                 top: ${ cursor.posY }px;
                  height: ${ cursor.height * ratio }px;`"
       />
     </div>
@@ -65,7 +67,8 @@
 import Vue from 'vue'
 import { DatePicker } from 'ant-design-vue'
 import { IEVersion } from '@/utils/util'
-import { addEventListener } from '@/utils/event'
+import { addEventListener, removeEventListener } from '@/utils/event'
+import { drawFillRect, clearContext } from '@/utils/canvas'
 
 Vue.use(DatePicker)
 
@@ -141,12 +144,19 @@ export default {
   data () {
     return {
       editContentContext: '',
+      editSelectionContext: '',
       editLock: false, // 编辑锁 用于处理中文输入
+      // 光标
       cursor: {
-        cursonIndex: 0, // 当前光标位置
-        x: 3,
-        y: 3,
-        height: 18
+        xAxisIndex: 0, // 光标X轴索引
+        yAxisIndex: 0, // 光标Y轴索引
+        posX: 0, // Y位置
+        posY: 3, // Y坐标
+        height: 18 // 光标高度
+      },
+      selection: {
+        xAxisVector: 0,
+        yAxisVector: 0
       },
       // 内容选择图
       cellSelectionMap: [],
@@ -218,6 +228,7 @@ export default {
     }
   },
   watch: {
+    // 传参修改的话，则是更换单元格
     'listenChange': function () {
       // console.log('listenChange')
       // console.log(this.currentSelect.startRowIndex)
@@ -228,22 +239,30 @@ export default {
         } else {
           // 重置光标位置
           this.cursor = {
-            cursonIndex: 0,
-            x: 3,
-            y: 3,
+            xAxisIndex: 0,
+            yAxisIndex: 0,
+            posX: 3,
+            posY: 3,
             height: 18
+          }
+          // 重置框选
+          this.selection = {
+            xAxisVector: 0,
+            yAxisVector: 0
           }
           this.inputCount = 0
         }
         this.$nextTick(() => {
           this.$refs.CellTextarea.focus()
           this.editContentContext = this.$refs.editContent.getContext('2d')
+          this.editSelectionContext = this.$refs.editSelection.getContext('2d')
         })
       }
     }
   },
   mounted () {
     this.editContentContext = this.$refs.editContent.getContext('2d')
+    this.editSelectionContext = this.$refs.editSelection.getContext('2d')
     this.$refs.CellTextarea.focus()
     // 处理单元格有中文输入、有候选词、一连串操作的情况
     this.$refs.CellTextarea.addEventListener('compositionstart', () => {
@@ -258,10 +277,16 @@ export default {
     })
     // 绑定粘贴事件
     this.$refs.CellTextarea.addEventListener('paste', this.handleCellPaste)
-    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
-    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+    // 绑定粘贴事件
+    this.$refs.CellTextarea.addEventListener('copy', this.handleCellCopy)
   },
   methods: {
+    initEventListener () {
+      addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+      addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+      addEventListener(window, 'mousedown', this.handleEditSelectionMouseDown)
+      addEventListener(window, 'mouseup', this.handleEditSelectionMouseUp)
+    },
     // 处理表格滚动
     handleSheetScrollX (e) {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
@@ -277,6 +302,45 @@ export default {
       if (this.isSelectCurrentSheet) {
         this.scrollY = Math.round(e.detail.scrollY * this.ratio * e.detail.sheetMoveRatio)
       }
+    },
+    drawEditSelection () {
+      const ctx = this.editSelectionContext
+      clearContext(ctx, this.cellWidth, this.cellHeight)
+      const xAxisVector = this.selection.xAxisVector
+      // 获取内容的开始位置
+      let startX = this._getContentStartX({
+        textAlign: this.cell.format.textAlign,
+        cellWidth: this.cellWidth
+      })
+      const xAxisIndex = this.cursor.xAxisIndex
+      for (let i = 0, len = xAxisIndex; i < len; i++) {
+        startX += this.cellSelectionMap[i]
+      }
+      // 框选宽度
+      let width = 0
+      if (xAxisVector > 0) {
+        // 根据第一个位置，获取开始位置
+        // 根据框选索引，获取选择框宽度
+        for (let i = xAxisIndex, len = xAxisIndex + xAxisVector; i < len; i++) {
+          width += this.cellSelectionMap[i]
+        }
+      } else if (xAxisVector < 0) {
+        // 根据第一个位置，获取开始位置
+        // 根据框选索引，获取选择框宽度
+        for (let i = xAxisIndex + xAxisVector, len = xAxisIndex; i < len; i++) {
+          width += this.cellSelectionMap[i]
+        }
+        width = -width
+      }
+      // 绘制背景颜色
+      drawFillRect({
+        ctx: ctx,
+        startX: startX,
+        startY: 8,
+        width: width,
+        height: 18,
+        color: 'RGBA(50, 50, 50, 0.35)'
+      })
     },
     // 根据单元格内容 生成选择Map
     _generateCellSelectionMap ({ ctx, textAlign, content }) {
@@ -326,6 +390,24 @@ export default {
       }
       return textWidth
     },
+    // 获取内容的起始X坐标
+    _getContentStartX ({ textAlign, cellWidth }) {
+      let startX = 0
+      if (textAlign === 'start' || textAlign === 'left') {
+        // 左对齐的文字：
+        // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = 6
+      } else if (textAlign === 'center') {
+        // 居中对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth / 2 - this.contentWidth / 2
+      } else if (textAlign === 'end' || textAlign === 'right') {
+        // 右对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth - this.contentWidth - 6
+      }
+      return startX
+    },
     /**
      * 更新光标位置
      * @param { Object } ctx - canvas 上下文
@@ -366,17 +448,60 @@ export default {
         // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
         startX = cellWidth - this.contentWidth - 6
       }
-      let cursonIndex = 0
-      for (let len = this.cellSelectionMap.length; cursonIndex < len; cursonIndex++) {
+      let cursorIndex = 0
+      for (let len = this.cellSelectionMap.length; cursorIndex < len; cursorIndex++) {
         if (startX < clickX) {
-          startX += this.cellSelectionMap[cursonIndex]
+          startX += this.cellSelectionMap[cursorIndex]
         } else {
           break
         }
       }
-      this.cursor.x = startX
-      this.cursor.y = (this.cellHeight / 2) - 9
-      this.cursor.cursonIndex = cursonIndex
+      this.cursor.posX = startX
+      this.cursor.posY = (this.cellHeight / 2) - 9
+      this.cursor.xAxisIndex = cursorIndex
+    },
+    _updateCursorEndIndex ({ ctx, textAlign, content, cellWidth, clickX, clickY }) {
+      // console.log('ctx:', ctx)
+      // console.log('content:', content)
+      // console.log('cellWidth:', cellWidth)
+      // console.log('clickX:', clickX)
+      // console.log('clickY:', clickY)
+      // 根据单元格内容生成选择Map
+      this._generateCellSelectionMap({
+        ctx: ctx,
+        textAlign: textAlign,
+        content: String(content)
+      })
+      // 文字宽度
+      this.contentWidth = this._getTextWidth({
+        ctx: ctx,
+        text: String(content)
+      })
+      let startX = 0
+      if (textAlign === 'start' || textAlign === 'left') {
+        // 左对齐的文字：
+        // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = 6
+      } else if (textAlign === 'center') {
+        // 居中对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth / 2 - this.contentWidth / 2
+      } else if (textAlign === 'end' || textAlign === 'right') {
+        // 右对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = cellWidth - this.contentWidth - 6
+      }
+      let cursorIndex = 0
+      for (let len = this.cellSelectionMap.length; cursorIndex < len; cursorIndex++) {
+        if (startX < clickX) {
+          startX += this.cellSelectionMap[cursorIndex]
+        } else {
+          break
+        }
+      }
+      this.cursor.posX = startX
+      this.cursor.posY = (this.cellHeight / 2) - 9
+      this.cursor.xAxisIndex = cursorIndex
     },
     /**
      * 根据文字位置，更新光标位置
@@ -386,11 +511,11 @@ export default {
      * @param { Number } cellWidth - 单元格宽度
      * @param { Number } clickX - 点击位置X
      */
-    _updateCursorPosByCursonIndex ({ ctx, textAlign, content, cellWidth, cursonIndex }) {
+    _updateCursorPosByCursorIndex ({ ctx, textAlign, content, cellWidth, cursorIndex }) {
       // console.log('ctx:', ctx)
       // console.log('content:', content)
       // console.log('cellWidth:', cellWidth)
-      // console.log('cursonIndex:', cursonIndex)
+      // console.log('cursorIndex:', cursorIndex)
       // 根据单元格内容生成选择Map
       this._generateCellSelectionMap({
         ctx: ctx,
@@ -417,15 +542,15 @@ export default {
       }
       // 查询光标X坐标
       for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
-        if (cursonIndex > i) {
+        if (cursorIndex > i) {
           startX += this.cellSelectionMap[i]
         } else {
           break
         }
       }
-      this.cursor.cursonIndex = cursonIndex
-      this.cursor.x = startX
-      this.cursor.y = (this.cellHeight / 2) - 9
+      this.cursor.xAxisIndex = cursorIndex
+      this.cursor.posX = startX
+      this.cursor.posY = (this.cellHeight / 2) - 9
     },
     /**
      * 根据向量
@@ -433,7 +558,7 @@ export default {
      */
     updateCursorPosByVector ({ vector }) {
       // 判断是否超出移动范围
-      if (this.cursor.cursonIndex + vector <= this.cellSelectionMap.length && this.cursor.cursonIndex + vector > -1) {
+      if (this.cursor.xAxisIndex + vector <= this.cellSelectionMap.length && this.cursor.xAxisIndex + vector > -1) {
         let startX = 0
         if (this.cell.format.textAlign === 'start' || this.cell.format.textAlign === 'left') {
           // 左对齐的文字：
@@ -451,16 +576,160 @@ export default {
         // 查询光标X坐标
         for (let i = 0, len = this.cellSelectionMap.length; i < len; i++) {
           console.log(this.cellSelectionMap[i])
-          if (this.cursor.cursonIndex + vector > i) {
+          if (this.cursor.xAxisIndex + vector > i) {
             startX += this.cellSelectionMap[i]
           } else {
             break
           }
         }
-        this.cursor.cursonIndex = this.cursor.cursonIndex + vector
-        this.cursor.x = startX
-        this.cursor.y = (this.cellHeight / 2) - 9
+        this.cursor.xAxisIndex = this.cursor.xAxisIndex + vector
+        this.cursor.posX = startX
+        this.cursor.posY = (this.cellHeight / 2) - 9
       }
+    },
+    /**
+     * 根据坐标获取光标索引
+     * @param { Object } ctx - canvas 上下文
+     * @param { Object } textAlign - 文字对齐方式
+     * @param { String } content - 内容
+     * @param { Number } cellWidth - 单元格宽度
+     * @param { Number } clickX - 点击位置X
+     */
+    _getCursorIndexByPos ({ ctx, textAlign, content, cellWidth, clickX }) {
+      // console.log('ctx:', ctx)
+      // console.log('textAlign:', textAlign)
+      // console.log('content:', content)
+      // console.log('cellWidth:', cellWidth)
+      // console.log('clickX:', clickX)
+      // 根据单元格内容生成选择Map
+      this._generateCellSelectionMap({
+        ctx: ctx,
+        content: String(content)
+      })
+      // 文字宽度
+      this.contentWidth = this._getTextWidth({
+        ctx: ctx,
+        text: String(content)
+      })
+      let startX = 0
+      if (textAlign === 'start' || textAlign === 'left') {
+        // 左对齐的文字：
+        // 从6开始计算，逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = 6
+      } else if (textAlign === 'center') {
+        // 居中对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，将单元格宽度除以一半，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = this.cellWidth / 2 - this.contentWidth / 2
+      } else if (textAlign === 'end' || textAlign === 'right') {
+        // 右对齐的文字：
+        // 先获取单元格宽度和所有文字宽度，求出最左侧的初始位置，然后逐个获取文字宽度叠加，即可获取到点击哪一个字，再根据字宽除以一半，就知道是点击文字的坐标还是右边，即可知道光标位置
+        startX = this.cellWidth - this.contentWidth - 6
+      }
+      let cursorIndex = 0
+      for (let len = this.cellSelectionMap.length; cursorIndex < len; cursorIndex++) {
+        if (startX < clickX) {
+          startX += this.cellSelectionMap[cursorIndex]
+        } else {
+          break
+        }
+      }
+      return cursorIndex
+    },
+    // 处理选择区域鼠标点下
+    handleEditSelectionMouseDown (e) {
+      console.log('handleEditSelectionMouseDown')
+      // console.log('event:', e)
+      clearContext(this.editSelectionContext, this.cellWidth, this.cellHeight)
+      // 判断是否点击到选择区域
+      if (event.target.className === 'edit-selection') {
+        addEventListener(window, 'mousemove', this.handleEditSelectionMouseMove)
+        let offsetX = 0
+        let offsetY = 0
+        if (event) {
+          offsetX = event.offsetX
+          offsetY = event.offsetY
+        } else {
+          // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+          offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+          offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+        }
+        // 根据鼠标点击位置，获取光标索引
+        const cursorIndex = this._getCursorIndexByPos({
+          ctx: this.editContentContext,
+          textAlign: this.cell.format.textAlign,
+          content: this.cell[this.customTableDataKey],
+          cellWidth: this.cellWidth,
+          clickX: offsetX,
+          clickY: offsetY
+        })
+        console.log('cursorIndex:', cursorIndex)
+        this.selectedIndex = [cursorIndex]
+        this.cursor.xAxisIndex = cursorIndex
+        this.selection = {
+          xAxisVector: 0,
+          yAxisVector: 0
+        }
+      }
+    },
+    // 处理选择区域鼠标松开
+    handleEditSelectionMouseUp (event) {
+      console.log('handleEditSelectionMouseUp')
+      console.log('event:', event)
+      removeEventListener(window, 'mousemove', this.handleEditSelectionMouseMove)
+      // 判断是否点击到选择区域
+      if (event.target.className === 'edit-selection') {
+        if (this.cell.contentType === 'text') {
+          let offsetX = 0
+          let offsetY = 0
+          if (event) {
+            offsetX = event.offsetX
+            offsetY = event.offsetY
+          } else {
+            // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+            offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+            offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+          }
+          // console.log('offsetX:', offsetX)
+          // console.log('offsetY:', offsetY)
+          this.$refs.CellTextarea.focus()
+          // 更新光标位置
+          this._updateCursorPos({
+            ctx: this.editContentContext,
+            textAlign: this.cell.format.textAlign,
+            content: this.cell[this.customTableDataKey],
+            cellWidth: this.cellWidth,
+            clickX: offsetX,
+            clickY: offsetY
+          })
+        }
+      }
+    },
+    // 处理选择区域鼠标移动
+    handleEditSelectionMouseMove (event) {
+      // console.log('handleEditSelectionMouseMove')
+      // console.log('event:', event)
+      let offsetX = 0
+      let offsetY = 0
+      if (event) {
+        offsetX = event.offsetX
+        offsetY = event.offsetY
+      } else {
+        // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+        offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+        offsetY = this.currentSelect.clickY - this.currentSelect.cellY
+      }
+      // 根据鼠标点击位置，获取光标索引
+      const cursorIndex = this._getCursorIndexByPos({
+        ctx: this.editContentContext,
+        textAlign: this.cell.format.textAlign,
+        content: this.cell[this.customTableDataKey],
+        cellWidth: this.cellWidth,
+        clickX: offsetX,
+        clickY: offsetY
+      })
+      const xAxisIndex = this.cursor.xAxisIndex
+      this.selection.xAxisVector = cursorIndex - xAxisIndex
+      this.drawEditSelection()
     },
     // 处理点击选择区域
     handleClickEditSelection (event) {
@@ -489,6 +758,33 @@ export default {
           clickY: offsetY
         })
       }
+    },
+    // 复制
+    handleCellCopy (e) {
+      const isIE = IEVersion() > -1
+      const clipboard = isIE ? window.clipboardData : e.clipboardData
+      const content = this.cell.content
+      // 判断是否为选择模式
+      if (this.currentSelect.isEditMode) {
+        // 判断是否已框选
+        if (this.selection.xAxisVector !== 0) {
+          let startIndex = 0
+          let vector = 0
+          if (this.selection.xAxisVector > 0) {
+            startIndex = this.cursor.xAxisIndex - this.selection.xAxisVector
+            vector = this.selection.xAxisVector
+          } else if (this.selection.xAxisVector < 0) {
+            startIndex = this.cursor.xAxisIndex
+            vector = -this.selection.xAxisVector
+          }
+          // 复制框选内容
+          clipboard.setData('text/plain', content.substr(startIndex, vector))
+        }
+      } else {
+        // 若不是选择模式，则复制单元格所有内容
+        clipboard.setData('text/plain', content)
+      }
+      e.preventDefault()
     },
     // 粘贴
     // ClipboardEvent.clipboardData: https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent/clipboardData
@@ -530,7 +826,6 @@ export default {
       console.log('handleCellInput')
       console.log(e)
       const inputType = e.inputType
-      // 兼容无输入类型的浏览器
       if (inputType) {
         const isInsert = inputType === 'insertText' // 是否为输入
         // const isPaste = inputType === 'insertFromPaste' // 是否为黏贴
@@ -546,6 +841,7 @@ export default {
           }
         }
       } else {
+        // 兼容无输入类型的浏览器
         const inputValue = e.target.value
         console.log('inputValue:', inputValue)
         console.log('editLock', this.editLock)
@@ -561,16 +857,32 @@ export default {
       this.$emit('deleteTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
-        cursorIndex: this.cursor.cursonIndex
+        cursorIndex: this.cursor.xAxisIndex,
+        selectionXAxisVector: this.selection.xAxisVector
       })
+      let cursorIndex = 0
+      if (this.cursor.xAxisIndex > 0) {
+        if (this.selection.xAxisVector > 0) {
+          cursorIndex = this.cursor.xAxisIndex > 0 ? this.cursor.xAxisIndex - this.selection.xAxisVector : 0
+        } else if (this.selection.xAxisVector < 0) {
+          cursorIndex = this.cursor.xAxisIndex > 0 ? this.cursor.xAxisIndex : 0
+        } else {
+          cursorIndex = this.cursor.xAxisIndex - 1
+        }
+      }
       // 更新光标位置
-      this._updateCursorPosByCursonIndex({
+      this._updateCursorPosByCursorIndex({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
-        cursonIndex: this.cursor.cursonIndex > 0 ? this.cursor.cursonIndex - 1 : 0
+        cursorIndex: cursorIndex
       })
+      // 重置框选
+      this.selection = {
+        xAxisVector: 0,
+        yAxisVector: 0
+      }
     },
     // 修改日期
     handleChangeDate (date, dateString) {
@@ -584,27 +896,39 @@ export default {
     },
     // 修改表格数据
     handleChangeTableData (inputValue) {
-      let isCover = false
-      if ((!this.currentSelect.isEditMode && this.inputCount === 0) || this.inputCount === 0) {
+      let isCover = false // 是否覆盖填写
+      // 不是编辑模式和输入次数为0的时候，则删除
+      if (!this.currentSelect.isEditMode && this.inputCount === 0) {
         isCover = true
       }
-      this.inputCount += 1
+      this.inputCount += 1 // 累加输入次数
+      // 修改表格数据
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
         dataType: 'text',
         data: inputValue,
-        cursorIndex: this.cursor.cursonIndex,
+        cursorIndex: this.cursor.xAxisIndex,
+        selectionXAxisVector: this.selection.xAxisVector,
         isCover: isCover
       })
+      let cursorIndex = this.cursor.xAxisIndex + inputValue.length
+      if (this.cursor.xAxisIndex > 0 && this.selection.xAxisVector > 0) {
+        cursorIndex = this.cursor.xAxisIndex > 0 ? this.cursor.xAxisIndex - this.selection.xAxisVector + inputValue.length : 0
+      }
       // 更新光标位置
-      this._updateCursorPosByCursonIndex({
+      this._updateCursorPosByCursorIndex({
         ctx: this.editContentContext,
         textAlign: this.cell.format.textAlign,
         content: this.cell[this.customTableDataKey],
         cellWidth: this.cellWidth,
-        cursonIndex: this.cursor.cursonIndex + inputValue.length
+        cursorIndex: cursorIndex
       })
+      // 重置框选
+      this.selection = {
+        xAxisVector: 0,
+        yAxisVector: 0
+      }
       // 清空富文本输入框
       this.$refs.CellTextarea.value = ''
     },
@@ -633,7 +957,7 @@ export default {
               rowIndex: this.currentSelect.startRowIndex + r,
               dataType: 'text',
               data: cellValue,
-              cursorIndex: this.cursor.cursonIndex,
+              cursorIndex: this.cursor.xAxisIndex,
               isCover: true
             })
           }
@@ -647,8 +971,10 @@ export default {
           rowIndex: this.currentSelect.startRowIndex,
           dataType: 'text',
           data: data,
-          cursorIndex: this.cursor.cursonIndex,
-          isCover: true
+          cursorIndex: this.cursor.xAxisIndex,
+          selectionXAxisVector: this.selection.xAxisVector,
+          isCover: !this.currentSelect.isEditMode ||
+            (!this.currentSelect.isEditMode && this.selection.xAxisVector === 0) // 若向量为0，则覆盖录入
         }])
       }
     },
@@ -692,6 +1018,7 @@ export default {
   position: absolute;
 
   .edit-selection {
+    opacity: 0;
     position: absolute;
     top: 0;
     left: 0;
@@ -715,7 +1042,7 @@ export default {
   }
 
   .edit-cursor {
-    z-index: 5;
+    z-index: 3;
     width: 1px;
     background: #000;
     vertical-align: center;

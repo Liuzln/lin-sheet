@@ -175,10 +175,12 @@ export default {
   },
   mounted () {
     this.sheetCanvasContext = this.$refs.sheetCanvas.getContext('2d')
-    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
-    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
   },
   methods: {
+    initEventListener () {
+      addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+      addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+    },
     refresh (force) {
       // 绘制离屏数据
       this.drawOffScreenCanvas(force)

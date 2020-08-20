@@ -78,7 +78,15 @@ export default {
     this.$refs.HorizontalScrollBar.addEventListener('ondragover', (e) => {
       e.preventDefault()
     })
-    addEventListener(window, 'mousemove', (e) => {
+  },
+  methods: {
+    initEventListener () {
+      addEventListener(window, 'mousemove', this.handleMouseMove)
+      addEventListener(window, 'mouseup', this.handleMouseUp)
+      // 滚动
+      addEventListener(window, 'mousewheel', this.handleMouseWheel)
+    },
+    handleMouseMove (e) {
       const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
       const visibleWidth = this.windowWidth - 16
       if (this.lock === false) {
@@ -108,28 +116,27 @@ export default {
         // 内容宽度 - 可视区域(已减去左偏移) = 需偏移空间量
         // 需偏移空间量 / 滚动条可偏移量
       }
-    })
-    addEventListener(window, 'mouseup', (e) => {
+    },
+    handleMouseUp (e) {
       this.lock = true
-    })
-    // 滚动
-    addEventListener(window, 'mousewheel', (e) => {
+    },
+    handleMouseWheel (e) {
       if (e.shiftKey && this.isSelectCurrentSheet && !e.ctrlKey) {
-        const stepWidth = -25 * e.delta
+        const stepWidth = -25 * e.delta // 步宽
+        // 可偏置值
         const canOffsetValue = this.windowWidth - 32 - this.thumbWidth - (this.columnStartWidth * this.ratio) - 16
         const visibleWidth = this.windowWidth - 16
-        // 判断滚动条是否在最上面和最下面
+        // 判断滚动条是否在最左边和最右边
         if (this.scrollX <= 0 && stepWidth < 0) {
           return
         } else if (this.scrollX >= canOffsetValue && stepWidth > 0) {
           return
         }
         // 移动量
-        console.log('stepWidth:', stepWidth)
         let movementX = (stepWidth / this.canvasRatio) * this.ratio
-        if (this.scrollX + movementX < 0) {
-          movementX = this.scrollX
-        } else if (this.scrollX + movementX > canOffsetValue) {
+        if (this.scrollX + movementX <= 0) {
+          movementX = -this.scrollX
+        } else if (this.scrollX + movementX >= canOffsetValue) {
           movementX = canOffsetValue - this.scrollX
         }
         this.scrollX += movementX
@@ -142,9 +149,7 @@ export default {
           }
         }))
       }
-    })
-  },
-  methods: {
+    }
   }
 }
 </script>

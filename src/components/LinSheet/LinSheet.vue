@@ -37,7 +37,8 @@
     />
     <!-- 水平滚动条 -->
     <horizontal-scroll-bar
-      v-if="columnTotalWidth > sheetWidth"
+      ref="HorizontalScrollBar"
+      v-show="columnTotalWidth > sheetWidth"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :columnStartWidth="columnStartWidth"
@@ -47,7 +48,8 @@
     />
     <!-- 垂直滚动条 -->
     <vertical-scroll-bar
-      v-if="rowTotalHeight > sheetHeight"
+      ref="VerticalScrollBar"
+      v-show="rowTotalHeight > sheetHeight"
       :isSelectCurrentSheet="isSelectCurrentSheet"
       :canvasRatio="canvasRatio"
       :rowHeaderHeight="rowHeaderHeight"
@@ -89,7 +91,7 @@
 import debounce from 'lodash.debounce'
 import uuidv1 from 'uuid/v1'
 import { evaluate } from '@/utils/math'
-import { addEventListener } from '@/utils/event'
+import { addEventListener, clearEventListener } from '@/utils/event'
 
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
@@ -194,6 +196,11 @@ export default {
     },
     // 是否绑定缩放事件监听器
     isBindZoomEventListener: {
+      type: Boolean,
+      default: true
+    },
+    // 是否自动注册事件监听器
+    isAutorRgisterEventListener: {
       type: Boolean,
       default: true
     }
@@ -311,40 +318,38 @@ export default {
   },
   mounted () {
     this.canvasRatio = window.devicePixelRatio || 1
-    // 判断是否监听缩放事件
-    if (this.isBindZoomEventListener) {
-      // Ctrl+鼠标滚轮缩放
-      addEventListener(window, 'mousewheel', this.handleZoomMousewheel, { passive: false })
-      // 监听键盘按键
-      addEventListener(window, 'keydown', this.handleZoomKeydown)
+    if (this.isAutorRgisterEventListener) {
+      this.initEventListener()
     }
-    // 监听键盘按键
-    addEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
-    addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
-    addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
-    window.addEventListener('keydown', this.handleBackspaceKeyDown)
   },
   beforeDestroy () {
-    console.log('beforeDestroy')
     this.clearEventListener()
   },
   methods: {
-    // 清空事件监听
-    clearEventListener () {
+    // 初始化事件监听
+    initEventListener () {
+      console.log('initEventListener')
+      // 判断是否监听缩放事件
       if (this.isBindZoomEventListener) {
-        removeEventListener(window, 'mousewheel', this.handleZoomMousewheel, { passive: false })
-        removeEventListener(window, 'keydown', this.handleZoomKeydown)
+        // Ctrl+鼠标滚轮缩放
+        addEventListener(window, 'mousewheel', this.handleZoomMousewheel, { passive: false })
+        // 监听键盘按键
+        addEventListener(window, 'keydown', this.handleZoomKeydown)
       }
-      removeEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
-      removeEventListener(window, 'updateScrollX', this.handleSheetScrollX)
-      removeEventListener(window, 'updateScrollY', this.handleSheetScrollY)
-      window.removeEventListener('keydown', this.handleBackspaceKeyDown)
+      // 监听键盘按键
+      addEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
+      addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
+      addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
+      this.$nextTick(() => {
+        this.$refs.EditLayer.initEventListener()
+        this.$refs.VerticalScrollBar.initEventListener()
+        this.$refs.HorizontalScrollBar.initEventListener()
+        this.$refs.sheetLayer.initEventListener()
+      })
     },
-    handleBackspaceKeyDown (e) {
-      // 退格键 屏蔽国产浏览器的退格键返回上一页功能
-      if (e.code === 'Backspace') {
-        e.preventDefault()
-      }
+    clearEventListener () {
+      // 清理所有事件监听器
+      clearEventListener()
     },
     handleZoomMousewheel (e) {
       console.log(e)
@@ -391,11 +396,10 @@ export default {
       }
     },
     handleSheetKeydown (e) {
-      console.log(e)
-      // // 退格键 屏蔽国产浏览器的退格键返回上一页功能
-      // if (e.code === 'Backspace') {
-      //   e.preventDefault()
-      // }
+      // 退格键 屏蔽国产浏览器的退格键返回上一页功能
+      if (e.code === 'Backspace') {
+        e.preventDefault()
+      }
       // Tab键 向右切换单元格
       if (e.code === 'Tab') {
         if (!this.getEditLock() && !this.currentSelect.isEditMode) {
@@ -686,30 +690,43 @@ export default {
      * @param { Number } dataType 内容类型
      * @param { Number } data 修改数据
      * @param { Number } cursorIndex 光标位置
-     * @param { Boolean } isCover 是否覆盖
+     * @param { Number } selectionXAxisVector 框选X轴向量
+     * @param { Boolean } isCover 是否覆盖填写
      */
-    handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex, isCover = false }) {
+    handleChangeTableData ({ columnIndex, rowIndex, dataType, data, cursorIndex,
+      selectionXAxisVector, isCover = false }) {
       if (dataType === 'text') {
-        console.log(data)
-        const cell = this.tableData[columnIndex - 1][rowIndex - 1]
-        const content = String(cell[this.customTableDataKey])
+        const cell = this.tableData[columnIndex - 1][rowIndex - 1] // 单元格对象
+        const content = String(cell[this.customTableDataKey]) // 单元格内容
         if (isCover) {
+          // 直接覆盖
           cell[this.customTableDataKey] = data
         } else {
+          let beforeSpliceIndex = 0
+          let afterSpliceIndex = 0
+          if (selectionXAxisVector > 0) {
+            beforeSpliceIndex = cursorIndex - selectionXAxisVector
+            afterSpliceIndex = cursorIndex
+          } else {
+            beforeSpliceIndex = cursorIndex
+            afterSpliceIndex = cursorIndex + -selectionXAxisVector
+          }
+          // 若内容长度大于0，则
           if (content.length > 0) {
-            cell[this.customTableDataKey] = content.slice(0, cursorIndex) + data + content.slice(cursorIndex)
+            cell[this.customTableDataKey] =
+              content.slice(0, beforeSpliceIndex) + data + content.slice(afterSpliceIndex)
           } else {
             cell[this.customTableDataKey] += data
           }
         }
       } else if (dataType === 'date') {
         // 日期类型
-        console.log(data)
         this.currentSelect.isEditMode = false
         const cell = this.tableData[columnIndex - 1][rowIndex - 1]
         cell[this.customTableDataKey] = data
       }
       this.$refs.sheetLayer.refresh(true)
+      // 事件冒泡
       const event = {
         columnIndex: columnIndex,
         rowIndex: rowIndex,
@@ -732,7 +749,19 @@ export default {
               if (item.isCover) {
                 cell[this.customTableDataKey] = item.data
               } else {
-                if (content.length > 0) {
+                // 若无向量，则删除
+                if (item.cursorIndex && item.selectionXAxisVector !== 0) {
+                  let beforeSpliceIndex = 0
+                  let afterSpliceIndex = 0
+                  if (item.selectionXAxisVector > 0) {
+                    beforeSpliceIndex = item.cursorIndex - item.selectionXAxisVector
+                    afterSpliceIndex = item.cursorIndex
+                  } else {
+                    beforeSpliceIndex = item.cursorIndex
+                    afterSpliceIndex = item.cursorIndex + -item.selectionXAxisVector
+                  }
+                  cell[this.customTableDataKey] = content.slice(0, beforeSpliceIndex) + item.data + content.slice(afterSpliceIndex)
+                } else if (item.cursorIndex) {
                   cell[this.customTableDataKey] = content.slice(0, item.cursorIndex) + item.data + content.slice(item.cursorIndex)
                 } else {
                   cell[this.customTableDataKey] += item.data
@@ -753,17 +782,29 @@ export default {
       this.$emit('pasteTableData', pasteData)
     },
     // 处理删除表格数据
-    handleDeleteTableData ({ columnIndex, rowIndex, cursorIndex }) {
+    handleDeleteTableData ({ columnIndex, rowIndex, cursorIndex, selectionXAxisVector }) {
       console.log(columnIndex)
       console.log(rowIndex)
       console.log(cursorIndex)
+      console.log(selectionXAxisVector)
       const cell = this.tableData[columnIndex - 1][rowIndex - 1]
       // 判断删除内容类型
       if (cell.contentType === 'text') {
         const content = String(cell[this.customTableDataKey])
         if (content.length > 0) {
           // 若无光标位置，则全删除
-          if (cursorIndex) {
+          if (cursorIndex && selectionXAxisVector !== 0) {
+            let beforeSpliceIndex = 0
+            let afterSpliceIndex = 0
+            if (selectionXAxisVector > 0) {
+              beforeSpliceIndex = cursorIndex - selectionXAxisVector
+              afterSpliceIndex = cursorIndex
+            } else {
+              beforeSpliceIndex = cursorIndex
+              afterSpliceIndex = cursorIndex + -selectionXAxisVector
+            }
+            cell[this.customTableDataKey] = content.slice(0, beforeSpliceIndex) + content.slice(afterSpliceIndex)
+          } else if (cursorIndex) {
             cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
           } else {
             cell[this.customTableDataKey] = ''
