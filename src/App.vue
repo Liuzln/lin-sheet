@@ -16,7 +16,7 @@
 import { getInnerWidth, getInnerHeight } from '@/utils/util'
 
 import LinSheet from './components/LinSheet'
-import TableManager from '@/services/TableManager'
+import TableManager from '@/http/TableManager'
 
 export default {
   name: 'app',

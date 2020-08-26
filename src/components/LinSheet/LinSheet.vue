@@ -1,5 +1,9 @@
 <template>
   <div id="lin-sheet">
+    <toolbar
+      ref="Toolbar"
+      class="toolbar"
+    />
     <!-- 自定义层 -->
     <slot
       name="customize-layer"
@@ -8,80 +12,82 @@
       v-bind:scrollX="scrollX / canvasRatio"
       v-bind:scrollY="scrollY / canvasRatio"
     />
-    <!-- 修改层 -->
-    <edit-layer
-      ref="EditLayer"
-      class="edit-layer"
-      :isSelectCurrentSheet="isSelectCurrentSheet"
-      :ratio="ratio"
-      :browserRatio="browserRatio"
-      :canvasRatio="canvasRatio"
-      :isVisibleRowHeader="isVisibleRowHeader"
-      :isVisibleColumnHeader="isVisibleColumnHeader"
-      :rows="rows"
-      :columns="columns"
-      :tableData="tableData"
-      :columnStartWidth="columnStartWidth"
-      :rowHeaderHeight="rowHeaderHeight"
-      :customTableDataKey="customTableDataKey"
-      :currentSelect="currentSelect"
-      @changeTableData="handleChangeTableData"
-      @pasteTableData="handlePasteTableData"
-      @deleteTableData="handleDeleteTableData"
-    />
-    <!-- 选择层 -->
-    <div
-      :id="tableKey"
-      class="click-layer"
-      @click="handleClickSheet"
-    />
-    <!-- 水平滚动条 -->
-    <horizontal-scroll-bar
-      ref="HorizontalScrollBar"
-      v-show="columnTotalWidth > sheetWidth"
-      :isSelectCurrentSheet="isSelectCurrentSheet"
-      :canvasRatio="canvasRatio"
-      :columnStartWidth="columnStartWidth"
-      :columnTotalWidth="columnTotalWidth"
-      :windowWidth="sheetWidth"
-      :ratio="ratio"
-    />
-    <!-- 垂直滚动条 -->
-    <vertical-scroll-bar
-      ref="VerticalScrollBar"
-      v-show="rowTotalHeight > sheetHeight"
-      :isSelectCurrentSheet="isSelectCurrentSheet"
-      :canvasRatio="canvasRatio"
-      :rowHeaderHeight="rowHeaderHeight"
-      :rowTotalHeight="rowTotalHeight"
-      :windowHeight="sheetHeight"
-      :ratio="ratio"
-    />
-    <!-- 单元格绘制 -->
-    <sheet-layer
-      ref="sheetLayer"
-      :isSelectCurrentSheet="isSelectCurrentSheet"
-      :width="sheetWidth"
-      :height="sheetHeight"
-      :columnTotalWidth="columnTotalWidth"
-      :rowTotalHeight="rowTotalHeight"
-      :browserRatio="browserRatio"
-      :canvasRatio="canvasRatio"
-      :ratio="ratio"
-      :isVisibleRowHeader="isVisibleRowHeader"
-      :isVisibleColumnHeader="isVisibleColumnHeader"
-      :columnStartWidth="columnStartWidth"
-      :rowHeaderHeight="rowHeaderHeight"
-      :rows="rows"
-      :isCustomRowName="isCustomRowName"
-      :customRowNameKey="customRowNameKey"
-      :columns="columns"
-      :isCustomColumnName="isCustomColumnName"
-      :customColumnNameKey="customColumnNameKey"
-      :tableData="tableData"
-      :customTableDataKey="customTableDataKey"
-      :isBindZoomEventListener="isBindZoomEventListener"
-    />
+    <div>
+      <!-- 修改层 -->
+      <edit-layer
+        ref="EditLayer"
+        class="edit-layer"
+        :isSelectCurrentSheet="isSelectCurrentSheet"
+        :ratio="ratio"
+        :browserRatio="browserRatio"
+        :canvasRatio="canvasRatio"
+        :isVisibleRowHeader="isVisibleRowHeader"
+        :isVisibleColumnHeader="isVisibleColumnHeader"
+        :rows="rows"
+        :columns="columns"
+        :tableData="tableData"
+        :columnStartWidth="columnStartWidth"
+        :rowHeaderHeight="rowHeaderHeight"
+        :customTableDataKey="customTableDataKey"
+        :currentSelect="currentSelect"
+        @changeTableData="handleChangeTableData"
+        @pasteTableData="handlePasteTableData"
+        @deleteTableData="handleDeleteTableData"
+      />
+      <!-- 选择层 -->
+      <div
+        :id="tableKey"
+        class="click-layer"
+        @click="handleClickSheet"
+      />
+      <!-- 水平滚动条 -->
+      <horizontal-scroll-bar
+        ref="HorizontalScrollBar"
+        v-show="columnTotalWidth > sheetWidth"
+        :isSelectCurrentSheet="isSelectCurrentSheet"
+        :canvasRatio="canvasRatio"
+        :columnStartWidth="columnStartWidth"
+        :columnTotalWidth="columnTotalWidth"
+        :windowWidth="sheetWidth"
+        :ratio="ratio"
+      />
+      <!-- 垂直滚动条 -->
+      <vertical-scroll-bar
+        ref="VerticalScrollBar"
+        v-show="rowTotalHeight > sheetHeight"
+        :isSelectCurrentSheet="isSelectCurrentSheet"
+        :canvasRatio="canvasRatio"
+        :rowHeaderHeight="rowHeaderHeight"
+        :rowTotalHeight="rowTotalHeight"
+        :windowHeight="sheetHeight"
+        :ratio="ratio"
+      />
+      <!-- 单元格绘制 -->
+      <sheet-layer
+        ref="sheetLayer"
+        :isSelectCurrentSheet="isSelectCurrentSheet"
+        :width="sheetWidth"
+        :height="sheetHeight"
+        :columnTotalWidth="columnTotalWidth"
+        :rowTotalHeight="rowTotalHeight"
+        :browserRatio="browserRatio"
+        :canvasRatio="canvasRatio"
+        :ratio="ratio"
+        :isVisibleRowHeader="isVisibleRowHeader"
+        :isVisibleColumnHeader="isVisibleColumnHeader"
+        :columnStartWidth="columnStartWidth"
+        :rowHeaderHeight="rowHeaderHeight"
+        :rows="rows"
+        :isCustomRowName="isCustomRowName"
+        :customRowNameKey="customRowNameKey"
+        :columns="columns"
+        :isCustomColumnName="isCustomColumnName"
+        :customColumnNameKey="customColumnNameKey"
+        :tableData="tableData"
+        :customTableDataKey="customTableDataKey"
+        :isBindZoomEventListener="isBindZoomEventListener"
+      />
+    </div>
   </div>
 </template>
 
@@ -97,6 +103,7 @@ import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
 import HorizontalScrollBar from './components/HorizontalScrollBar.vue'
 import VerticalScrollBar from './components/VerticalScrollBar.vue'
+import Toolbar from './components/Toolbar.vue'
 
 export default {
   name: 'LinSheet',
@@ -104,7 +111,8 @@ export default {
     SheetLayer,
     EditLayer,
     HorizontalScrollBar,
-    VerticalScrollBar
+    VerticalScrollBar,
+    Toolbar
   },
   props: {
     // 当前选择的表格Key 用于多个表格时判断目前点击哪个表格
@@ -828,6 +836,8 @@ export default {
 </script>
 
 <style lang="scss">
+@import "./index.scss";
+
 #lin-sheet {
   position: relative;
   width: 100%;
@@ -837,7 +847,7 @@ export default {
 .click-layer {
   z-index: 1;
   position: absolute;
-  top: 0;
+  top: 50px;
   left: 0;
   width: 100%;
   height: 100%;
