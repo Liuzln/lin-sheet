@@ -41,8 +41,12 @@ class History {
 
   // 获取历史修改记录列表
   getHistoryRecord (index) {
-    const record = { ...this.records[index] }
-    return record
+    if (this.records[index]) {
+      const record = { ...this.records[index] }
+      return record
+    } else {
+      return null
+    }
   }
 
   // 获取历史修改记录列表
