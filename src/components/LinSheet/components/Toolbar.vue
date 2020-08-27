@@ -2,11 +2,13 @@
   <div id="toolbar">
     <div class="items-container">
       <div class="items">
-        <div class="lin-icon-btn">
+        <div class="lin-icon-btn" @click="$emit('backward')">
           <span class="iconfont icon-si-glyph-arrow-backward"></span>
+          <span class="text">撤回</span>
         </div>
-        <div class="lin-icon-btn">
+        <div class="lin-icon-btn" @click="$emit('restore')">
           <span class="iconfont icon-si-glyph-arrow-forward"></span>
+          <span class="text">恢复</span>
         </div>
       </div>
     </div>
@@ -58,11 +60,23 @@ export default {
         margin: 0 4px;
         padding: 4px;
         border-radius: 2px;
-        font-size: 16px;
-        line-height: 16px;
+        vertical-align: center;
+        cursor: pointer;
 
         &:hover {
           background-color: RGB(234, 236, 240);
+        }
+
+        .iconfont {
+          font-size: 16px;
+          line-height: 16px;
+        }
+
+        .text {
+          display: inline-block;
+          margin: 0 0 0 4px;
+          font-size: 14px;
+          line-height: 14px;
         }
       }
     }

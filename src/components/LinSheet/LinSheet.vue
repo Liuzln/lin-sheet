@@ -3,6 +3,8 @@
     <toolbar
       ref="Toolbar"
       class="toolbar"
+      @backward="$refs.EditLayer.handleBackward()"
+      @restore="$refs.EditLayer.handleRestore()"
     />
     <!-- 自定义层 -->
     <slot
@@ -30,6 +32,7 @@
         :rowHeaderHeight="rowHeaderHeight"
         :customTableDataKey="customTableDataKey"
         :currentSelect="currentSelect"
+        :history="history"
         @changeTableData="handleChangeTableData"
         @pasteTableData="handlePasteTableData"
         @deleteTableData="handleDeleteTableData"
@@ -98,6 +101,7 @@ import debounce from 'lodash.debounce'
 import uuidv1 from 'uuid/v1'
 import { evaluate } from '@/utils/math'
 import { addEventListener, clearEventListener } from '@/utils/event'
+import History from './service/history'
 
 import SheetLayer from './components/SheetLayer.vue'
 import EditLayer from './components/EditLayer.vue'
@@ -223,9 +227,9 @@ export default {
         endColumnIndex: 1, // 列结束索引 多选时用的坐标
         startRowIndex: 1, // 行开始索引 单选时用的坐标
         endRowIndex: 1, // 行结束索引 多选时用的坐标
-        isEditMode: false, // 单元格编辑模式
         cellX: this.isVisibleColumnHeader ? this.columnStartWidth : 0, // 单元格左上角位置X轴
         cellY: this.isVisibleRowHeader ? this.rowHeaderHeight : 0, // 单元格左上角位置Y轴
+        isEditMode: false, // 单元格编辑模式
         clickX: 0, // 鼠标点击位置
         clickY: 0 // 鼠标点击位置
       },
@@ -233,7 +237,8 @@ export default {
       scrollY: 0,
       sheetWidth: 0,
       sheetHeight: 0,
-      tabVector: 0
+      tabVector: 0,
+      history: ''
     }
   },
   computed: {
@@ -307,6 +312,7 @@ export default {
     }
   },
   created () {
+    this.history = new History()
     if (this.width) {
       // 控制表格最大宽度
       if (this.maxWidth && this.width > this.maxWidth) {
@@ -346,6 +352,7 @@ export default {
       }
       // 监听键盘按键
       addEventListener(window, 'keydown', this.handleSheetKeydown, { passive: false })
+      addEventListener(window, 'keydown', this.handleHistoryKeydown, { passive: false })
       addEventListener(window, 'updateScrollX', this.handleSheetScrollX)
       addEventListener(window, 'updateScrollY', this.handleSheetScrollY)
       this.$nextTick(() => {
@@ -401,6 +408,55 @@ export default {
           e.preventDefault()
           this.canvasRatio = this.browserRatio
         }
+      }
+    },
+    handleHistoryKeydown (e) {
+      // 历史记录快捷键
+      // 按下 Ctrl + z 撤回
+      // 按下 Ctrl + Shift + Z 恢复
+      if (e.ctrlKey) {
+        // Ctrl + Z
+        if (e.code === 'KeyZ') {
+          e.preventDefault()
+          this.handleBackward()
+        }
+        // Ctrl + Shift + Z
+        if (e.shiftKey) {
+          if (e.code === 'KeyZ') {
+            e.preventDefault()
+            this.handleBackward()
+          }
+        }
+      }
+    },
+    // 撤回
+    handleBackward () {
+      // 获取历史记录
+      const index = this.history.getRecordIndex()
+      const historyRecord = this.history.getHistoryRecord(index)
+      if (historyRecord) {
+        this.$set(this.currentSelect, 'startColumnIndex', historyRecord.currentSelect.startColumnIndex)
+        this.$set(this.currentSelect, 'endColumnIndex', historyRecord.currentSelect.endColumnIndex)
+        this.$set(this.currentSelect, 'startRowIndex', historyRecord.currentSelect.startRowIndex)
+        this.$set(this.currentSelect, 'endRowIndex', historyRecord.currentSelect.endRowIndex)
+        this.$set(this.currentSelect, 'cellX', historyRecord.currentSelect.cellX)
+        this.$set(this.currentSelect, 'cellY', historyRecord.currentSelect.cellY)
+        this.$refs.EditLayer.handleBackward()
+      }
+    },
+    // 恢复
+    handleRestore () {
+      // 获取历史记录
+      const index = this.history.getRecordIndex()
+      const historyRecord = this.history.getHistoryRecord(index)
+      if (historyRecord) {
+        this.$set(this.currentSelect, 'startColumnIndex', historyRecord.currentSelect.startColumnIndex)
+        this.$set(this.currentSelect, 'endColumnIndex', historyRecord.currentSelect.endColumnIndex)
+        this.$set(this.currentSelect, 'startRowIndex', historyRecord.currentSelect.startRowIndex)
+        this.$set(this.currentSelect, 'endRowIndex', historyRecord.currentSelect.endRowIndex)
+        this.$set(this.currentSelect, 'cellX', historyRecord.currentSelect.cellX)
+        this.$set(this.currentSelect, 'cellY', historyRecord.currentSelect.cellY)
+        this.$refs.EditLayer.handleRestore()
       }
     },
     handleSheetKeydown (e) {
@@ -797,29 +853,25 @@ export default {
       console.log(selectionXAxisVector)
       const cell = this.tableData[columnIndex - 1][rowIndex - 1]
       // 判断删除内容类型
-      if (cell.contentType === 'text') {
-        const content = String(cell[this.customTableDataKey])
-        if (content.length > 0) {
-          // 若无光标位置，则全删除
-          if (cursorIndex && selectionXAxisVector !== 0) {
-            let beforeSpliceIndex = 0
-            let afterSpliceIndex = 0
-            if (selectionXAxisVector > 0) {
-              beforeSpliceIndex = cursorIndex - selectionXAxisVector
-              afterSpliceIndex = cursorIndex
-            } else {
-              beforeSpliceIndex = cursorIndex
-              afterSpliceIndex = cursorIndex + -selectionXAxisVector
-            }
-            cell[this.customTableDataKey] = content.slice(0, beforeSpliceIndex) + content.slice(afterSpliceIndex)
-          } else if (cursorIndex) {
-            cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+      const content = String(cell[this.customTableDataKey])
+      if (content.length > 0) {
+        // 若无光标位置，则全删除
+        if (cursorIndex && selectionXAxisVector !== 0) {
+          let beforeSpliceIndex = 0
+          let afterSpliceIndex = 0
+          if (selectionXAxisVector > 0) {
+            beforeSpliceIndex = cursorIndex - selectionXAxisVector
+            afterSpliceIndex = cursorIndex
           } else {
-            cell[this.customTableDataKey] = ''
+            beforeSpliceIndex = cursorIndex
+            afterSpliceIndex = cursorIndex + -selectionXAxisVector
           }
+          cell[this.customTableDataKey] = content.slice(0, beforeSpliceIndex) + content.slice(afterSpliceIndex)
+        } else if (cursorIndex) {
+          cell[this.customTableDataKey] = content.slice(0, cursorIndex - 1) + content.slice(cursorIndex)
+        } else {
+          cell[this.customTableDataKey] = ''
         }
-      } else if (cell.contentType === 'date') {
-        cell[this.customTableDataKey] = ''
       }
       this.$refs.sheetLayer.refresh(true)
       const event = {

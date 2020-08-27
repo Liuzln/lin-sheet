@@ -9,7 +9,6 @@
     >
       <!-- 单元格框选区域 -->
       <canvas
-        v-show="cell.contentType === 'text'"
         ref="editSelection"
         class="edit-selection"
         :width="cellWidth"
@@ -24,7 +23,7 @@
         class="edit-border"
         :style="`width: ${ cellWidth }px; height: ${ cellHeight }px;`"
       />
-      <a-date-picker
+      <!-- <a-date-picker
         v-if="cell.contentType === 'date' || cell.contentType === 'shortDate'"
         :open="currentSelect.isEditMode"
         placeholder="日期"
@@ -34,7 +33,7 @@
         style="position: absolute; top: 0; left: 0;"
       >
         <span></span>
-      </a-date-picker>
+      </a-date-picker> -->
       <!-- 单元格文本内容 -->
       <canvas
         ref="editContent"
@@ -43,7 +42,6 @@
       />
       <!-- 光标效果 -->
       <div
-        v-show="cell.contentType === 'text' && selection.xAxisVector === 0"
         class="edit-cursor"
         :style="`width: ${ currentSelect.isEditMode ? 1 : 0 }px;
                  left: ${ cursor.posX }px;
@@ -137,6 +135,11 @@ export default {
     },
     // 当前选择
     currentSelect: {
+      type: Object,
+      required: true
+    },
+    // 历史记录
+    history: {
       type: Object,
       required: true
     }
@@ -287,6 +290,120 @@ export default {
       addEventListener(window, 'mousedown', this.handleEditSelectionMouseDown)
       addEventListener(window, 'mouseup', this.handleEditSelectionMouseUp)
     },
+    // 撤回
+    handleBackward () {
+      console.log('this.history:', this.history)
+      const history = this.history.backToPrevHistoryRecord()
+      if (history) {
+        this.inputCount = 0 // 累加输入次数
+        let cursorIndex = history.cursorIndex + history.diff.length
+        if (history.type === 'add') {
+          console.log('add')
+          // 根据历史记录，添加数据
+          this.$emit('changeTableData', {
+            columnIndex: history.currentSelect.startColumnIndex,
+            rowIndex: history.currentSelect.startRowIndex,
+            dataType: history.dataType,
+            data: history.oldValue,
+            isCover: true
+          })
+        } else if (history.type === 'delete') {
+          console.log('delete')
+          // 根据历史记录，添加数据
+          this.$emit('changeTableData', {
+            columnIndex: history.currentSelect.startColumnIndex,
+            rowIndex: history.currentSelect.startRowIndex,
+            dataType: history.dataType,
+            data: history.oldValue,
+            isCover: true
+          })
+        } else if (history.type === 'paste') {
+          console.log('paste')
+        }
+
+        if (cursorIndex > 0) {
+          if (history.selectionXAxisVector > 0) {
+            cursorIndex = cursorIndex > 0 ? cursorIndex - history.selectionXAxisVector : 0
+          } else if (history.selectionXAxisVector < 0) {
+            cursorIndex = cursorIndex > 0 ? cursorIndex : 0
+          } else {
+            cursorIndex = cursorIndex - 1
+          }
+        }
+        // 更新光标位置
+        this._updateCursorPosByCursorIndex({
+          ctx: this.editContentContext,
+          textAlign: this.cell.format.textAlign,
+          content: this.cell[this.customTableDataKey],
+          cellWidth: this.cellWidth,
+          cursorIndex: cursorIndex
+        })
+        // 重置框选
+        this.selection = {
+          xAxisVector: 0,
+          yAxisVector: 0
+        }
+        // 清空富文本输入框
+        this.$refs.CellTextarea.value = ''
+      }
+    },
+    // 恢复
+    handleRestore () {
+      const history = this.history.goToNextHistoryRecord()
+      if (history) {
+        this.inputCount = 0 // 累加输入次数
+        let cursorIndex = history.cursorIndex + history.diff.length
+        if (history.type === 'add') {
+          console.log('add')
+          // 根据历史记录，添加数据
+          this.$emit('changeTableData', {
+            columnIndex: history.columnIndex,
+            rowIndex: history.rowIndex,
+            dataType: history.dataType,
+            data: history.data,
+            cursorIndex: history.cursorIndex,
+            selectionXAxisVector: history.selectionXAxisVector,
+            isCover: history.isCover
+          })
+        } else if (history.type === 'delete') {
+          console.log('delete')
+          // 根据历史记录，删除数据
+          this.$emit('deleteTableData', {
+            columnIndex: history.columnIndex,
+            rowIndex: history.rowIndex,
+            cursorIndex: cursorIndex,
+            selectionXAxisVector: history.selectionXAxisVector
+          })
+        } else if (history.type === 'paste') {
+          console.log('paste')
+        }
+
+        if (cursorIndex > 0) {
+          if (history.selectionXAxisVector > 0) {
+            cursorIndex = cursorIndex > 0 ? cursorIndex - history.selectionXAxisVector : 0
+          } else if (history.selectionXAxisVector < 0) {
+            cursorIndex = cursorIndex > 0 ? cursorIndex : 0
+          } else {
+            cursorIndex = cursorIndex - 1
+          }
+        }
+        // 更新光标位置
+        this._updateCursorPosByCursorIndex({
+          ctx: this.editContentContext,
+          textAlign: this.cell.format.textAlign,
+          content: this.cell[this.customTableDataKey],
+          cellWidth: this.cellWidth,
+          cursorIndex: cursorIndex
+        })
+        // 重置框选
+        this.selection = {
+          xAxisVector: 0,
+          yAxisVector: 0
+        }
+        // 清空富文本输入框
+        this.$refs.CellTextarea.value = ''
+      }
+    },
     // 处理表格滚动
     handleSheetScrollX (e) {
       // 当鼠标向左移(即正数)，表格则是向右移动(即负数)
@@ -336,7 +453,7 @@ export default {
       drawFillRect({
         ctx: ctx,
         startX: startX,
-        startY: 8,
+        startY: (this.cellHeight / 2) - 9,
         width: width,
         height: 18,
         color: 'RGBA(50, 50, 50, 0.35)'
@@ -678,30 +795,28 @@ export default {
       removeEventListener(window, 'mousemove', this.handleEditSelectionMouseMove)
       // 判断是否点击到选择区域
       if (event.target.className === 'edit-selection') {
-        if (this.cell.contentType === 'text') {
-          let offsetX = 0
-          let offsetY = 0
-          if (event) {
-            offsetX = event.offsetX
-            offsetY = event.offsetY
-          } else {
-            // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
-            offsetX = this.currentSelect.clickX - this.currentSelect.cellX
-            offsetY = this.currentSelect.clickY - this.currentSelect.cellY
-          }
-          // console.log('offsetX:', offsetX)
-          // console.log('offsetY:', offsetY)
-          this.$refs.CellTextarea.focus()
-          // 更新光标位置
-          this._updateCursorPos({
-            ctx: this.editContentContext,
-            textAlign: this.cell.format.textAlign,
-            content: this.cell[this.customTableDataKey],
-            cellWidth: this.cellWidth,
-            clickX: offsetX,
-            clickY: offsetY
-          })
+        let offsetX = 0
+        let offsetY = 0
+        if (event) {
+          offsetX = event.offsetX
+          offsetY = event.offsetY
+        } else {
+          // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+          offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+          offsetY = this.currentSelect.clickY - this.currentSelect.cellY
         }
+        // console.log('offsetX:', offsetX)
+        // console.log('offsetY:', offsetY)
+        this.$refs.CellTextarea.focus()
+        // 更新光标位置
+        this._updateCursorPos({
+          ctx: this.editContentContext,
+          textAlign: this.cell.format.textAlign,
+          content: this.cell[this.customTableDataKey],
+          cellWidth: this.cellWidth,
+          clickX: offsetX,
+          clickY: offsetY
+        })
       }
     },
     // 处理选择区域鼠标移动
@@ -734,30 +849,28 @@ export default {
     // 处理点击选择区域
     handleClickEditSelection (event) {
       console.log('handleClickEditSelection')
-      if (this.cell.contentType === 'text') {
-        let offsetX = 0
-        let offsetY = 0
-        if (event) {
-          offsetX = event.offsetX
-          offsetY = event.offsetY
-        } else {
-          // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
-          offsetX = this.currentSelect.clickX - this.currentSelect.cellX
-          offsetY = this.currentSelect.clickY - this.currentSelect.cellY
-        }
-        // console.log('offsetX:', offsetX)
-        // console.log('offsetY:', offsetY)
-        this.$refs.CellTextarea.focus()
-        // 更新光标位置
-        this._updateCursorPos({
-          ctx: this.editContentContext,
-          textAlign: this.cell.format.textAlign,
-          content: this.cell[this.customTableDataKey],
-          cellWidth: this.cellWidth,
-          clickX: offsetX,
-          clickY: offsetY
-        })
+      let offsetX = 0
+      let offsetY = 0
+      if (event) {
+        offsetX = event.offsetX
+        offsetY = event.offsetY
+      } else {
+        // 根据鼠标点击位置和单元格起始位置，计算出单元格相对点击位置
+        offsetX = this.currentSelect.clickX - this.currentSelect.cellX
+        offsetY = this.currentSelect.clickY - this.currentSelect.cellY
       }
+      // console.log('offsetX:', offsetX)
+      // console.log('offsetY:', offsetY)
+      this.$refs.CellTextarea.focus()
+      // 更新光标位置
+      this._updateCursorPos({
+        ctx: this.editContentContext,
+        textAlign: this.cell.format.textAlign,
+        content: this.cell[this.customTableDataKey],
+        cellWidth: this.cellWidth,
+        clickX: offsetX,
+        clickY: offsetY
+      })
     },
     // 复制
     handleCellCopy (e) {
@@ -854,6 +967,44 @@ export default {
     // 删除
     handleCellDelete (e) {
       console.log(e)
+      console.log('cell:', this.cell.contentType)
+      const content = this.cell[this.customTableDataKey]
+      let diff = this.cell[this.customTableDataKey]
+      // 若无光标位置，则全删除
+      if (this.cursor.xAxisIndex && this.selection.xAxisVector !== 0) {
+        let beforeSpliceIndex = 0
+        let afterSpliceIndex = 0
+        if (this.selection.xAxisVector > 0) {
+          beforeSpliceIndex = this.cursor.xAxisIndex - this.selection.xAxisVector
+          afterSpliceIndex = this.cursor.xAxisIndex
+        } else {
+          beforeSpliceIndex = this.cursor.xAxisIndex
+          afterSpliceIndex = this.cursor.xAxisIndex + -this.selection.xAxisVector
+        }
+        diff = diff.slice(beforeSpliceIndex, afterSpliceIndex)
+      } else if (this.cursor.xAxisIndex) {
+        diff = diff.slice(this.cursor.xAxisIndex - 1, this.cursor.xAxisIndex)
+      } else {
+        diff = ''
+      }
+      let newContent = this.cell[this.customTableDataKey]
+      // 若无光标位置，则全删除
+      if (this.cursor.xAxisIndex && this.selection.xAxisVector !== 0) {
+        let beforeSpliceIndex = 0
+        let afterSpliceIndex = 0
+        if (this.selection.xAxisVector > 0) {
+          beforeSpliceIndex = this.cursor.xAxisIndex - this.selection.xAxisVector
+          afterSpliceIndex = this.cursor.xAxisIndex
+        } else {
+          beforeSpliceIndex = this.cursor.xAxisIndex
+          afterSpliceIndex = this.cursor.xAxisIndex + -this.selection.xAxisVector
+        }
+        newContent = newContent.slice(beforeSpliceIndex, afterSpliceIndex)
+      } else if (this.cursor.xAxisIndex) {
+        newContent = newContent.slice(this.cursor.xAxisIndex - 1, this.cursor.xAxisIndex)
+      } else {
+        newContent = ''
+      }
       this.$emit('deleteTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
         rowIndex: this.currentSelect.startRowIndex,
@@ -870,6 +1021,24 @@ export default {
           cursorIndex = this.cursor.xAxisIndex - 1
         }
       }
+      // 添加历史记录
+      this.history.addHistoryRecord({
+        currentSelect: {
+          startColumnIndex: this.currentSelect.startColumnIndex,
+          endColumnIndex: this.currentSelect.endColumnIndex,
+          startRowIndex: this.currentSelect.startRowIndex,
+          endRowIndex: this.currentSelect.endRowIndex,
+          cellX: this.currentSelect.cellX,
+          cellY: this.currentSelect.cellY
+        },
+        dataType: this.cell.contentType,
+        oldValue: content,
+        newValue: newContent,
+        diff: diff,
+        type: 'delete',
+        cursorIndex: this.cursor.xAxisIndex,
+        selectionXAxisVector: this.selection.xAxisVector
+      })
       // 更新光标位置
       this._updateCursorPosByCursorIndex({
         ctx: this.editContentContext,
@@ -902,6 +1071,26 @@ export default {
         isCover = true
       }
       this.inputCount += 1 // 累加输入次数
+      const content = this.cell[this.customTableDataKey]
+      // 添加历史记录
+      this.history.addHistoryRecord({
+        currentSelect: {
+          startColumnIndex: this.currentSelect.startColumnIndex,
+          endColumnIndex: this.currentSelect.endColumnIndex,
+          startRowIndex: this.currentSelect.startRowIndex,
+          endRowIndex: this.currentSelect.endRowIndex,
+          cellX: this.currentSelect.cellX,
+          cellY: this.currentSelect.cellY
+        },
+        dataType: 'text',
+        oldValue: content,
+        newValue: isCover ? inputValue : content + inputValue,
+        diff: inputValue,
+        type: 'add',
+        cursorIndex: this.cursor.xAxisIndex,
+        selectionXAxisVector: this.selection.xAxisVector,
+        isCover: isCover
+      })
       // 修改表格数据
       this.$emit('changeTableData', {
         columnIndex: this.currentSelect.startColumnIndex,
